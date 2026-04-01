@@ -47,3 +47,22 @@ L'objectif de ce projet est de lever définitivement la barrière technique du t
 
 ---
 *Distribué sous licence GNU GPL v3.*
+
+---
+## 🖥️ Nouvelles Interfaces Graphiques (V2.0)
+
+### Installation et Lanceur
+![](01_Lanceur_installation_python,_%20venv.jpg)
+![](02_Lanceur_Ortho4xp_V2.jpg)
+
+### Interface Principale et Color Check
+![](03_Nouvelle_interface.jpg)
+![](04_Color%20Check_01.jpeg)
+
+---
+
+## 🌊 Comparaison des Masques Maritimes
+
+| Sans Masque (Ancien) | Masque Automatique (V2.0) |
+| :---: | :---: |
+| ![](Sans_mask_maritime.jpg) | ![](Mask_maritime_automatique.png) |
