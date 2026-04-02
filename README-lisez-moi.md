@@ -21,7 +21,6 @@ L'objectif de ce projet est de lever définitivement la barrière technique du t
 * **Stabilité :** "Sentinelle" intégrée pour monitorer le CPU et la RAM (limitation automatique à 75% pour éviter les plantages).
 * **Colorimétrie Avancée :** Calibration sur 48 753 JPG, normalisation en mémoire et fondu RGB progressif pour des transitions invisibles entre les sources.
 * **Masquage Maritime :** Option de reconstruction de masques en mer pour un rendu côtier naturel.
-* **Zones Sensibles :** Reconstruction des zones floutées ou masquées par interpolation des JPG voisins, évitant les zones grises ou floues.
 * **Gestion des Frontières :** Amélioration des limites administratives et frontalières pour un dégradé colorimétrique harmonieux.
 
 ---
