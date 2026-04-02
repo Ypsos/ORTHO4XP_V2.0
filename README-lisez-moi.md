@@ -1,8 +1,6 @@
----
-
 ## 📖 LISEZ-MOI - Ortho4XP_V2.0 🌍
 
-**Évolution moderne avec installation automatique sans terminal.** Développé par **Ypsos**, basé sur la version **ORTHO4XP_1.40 Master** originale d'**Oscar Pilote**.
+**Évolution moderne avec installation automatique sans terminal.** Version adaptée par **Ypsos**, basée sur la version **ORTHO4XP_1.40 Master** originale d'**Oscar Pilote**.
 
 ---
 
