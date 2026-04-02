@@ -1,5 +1,3 @@
-Voici une version optimisée, propre et structurée pour votre fichier `README.md`. J'ai fusionné vos dernières corrections techniques avec la structure de présentation pour un rendu professionnel sur GitHub.
-
 ---
 
 ## 📖 LISEZ-MOI - Ortho4XP_V2.0 🌍
