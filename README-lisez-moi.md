@@ -55,9 +55,3 @@ L'objectif de ce projet est de lever définitivement la barrière technique du t
 ![](04_Color%20Check_01.jpeg)
 
 ---
-
-## 🌊 Comparaison des Masques Maritimes
-
-| Sans Masque (Ancien) | Masque Automatique (V2.0) |
-| :---: | :---: |
-| ![](Sans_mask_maritime.jpg) | ![](Mask_maritime_automatique.png) |
