@@ -67,6 +67,15 @@ Distribué sous licence GNU GPL v3.
 🖥️ Nouvelles Interfaces Graphiques (V2.0)
 
 Installation et Lanceur
+![02_Lanceur_Ortho4xp_V2](https://github.com/user-attachments/assets/9dd4b804-ff29-459b-9b1c-0e4f42ef78b7)
+
+![02_Lanceur_Ortho4xp_V2](https://github.com/user-attachments/assets/24d31a82-54a4-481c-a76f-664ec7e3dc45)
+
 
 ￼ ￼
 Interface Principale et Color Check
+![03_Nouvelle_interface](https://github.com/user-attachments/assets/107508b3-5f5b-457c-acf0-193a4a9bcac1)
+
+![04_Color Check_01](https://github.com/user-attachments/assets/dbcd5399-3b8c-4651-a9e9-a11d172c062c)
+
+
