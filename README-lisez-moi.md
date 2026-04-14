@@ -1,11 +1,13 @@
-[README-lisez-moi.md](https://github.com/user-attachments/files/26577916/README-lisez-moi.md)<div align="center">
+<p align="center">
+  <img src="banner.jpg" alt="ORTHO4XP V2 Banner" width="100%">
+</p>
 
+<div align="center">
   <img src="https://github.com/Ypsos.png" width="130" alt="Ypsos Logo">
-
   <h1>ORTHO4XP V2.0</h1>
   <p><strong>La version moderne d’Ortho4XP</strong><br>
   Installation automatique • Sans terminal • Pour X-Plane</p>
-
+</div>
   <br>
 
   <img src="https://raw.githubusercontent.com/Ypsos/ORTHO4XP_V2.0/main/03_Nouvelle_interface.jpg" 
