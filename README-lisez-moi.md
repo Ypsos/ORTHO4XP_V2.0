@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="BanniereGithub.png" alt="ORTHO4XP V2 Banner" width="100%" style="max-height: 380px;">
+  <img src="BanniereGithub.png" alt="ORTHO4XP V2 Banner" width="100%" style="max-height: 340px;">
 </p>
 
 <div align="center">
