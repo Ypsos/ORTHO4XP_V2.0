@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="BanniereGithub.png" alt="ORTHO4XP V2 Banner" width="100%">
+  <img src="BanniereGithub.png" alt="ORTHO4XP V2 Banner" width="100%" style="max-height: 380px;">
 </p>
 
 <div align="center">
@@ -8,7 +8,8 @@
   <p><strong>La version moderne d’Ortho4XP</strong><br>
   Installation automatique • Sans terminal • Pour X-Plane</p>
 </div>
-  <br>
+
+<br>
 
   <img src="https://raw.githubusercontent.com/Ypsos/ORTHO4XP_V2.0/main/03_Nouvelle_interface.jpg" 
        alt="ORTHO4XP V2" width="88%" style="border-radius:16px; box-shadow:0 15px 40px rgba(0,0,0,0.45);">
