@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="banner.jpg" alt="ORTHO4XP V2 Banner" width="100%">
+  <img src="BanniereGithub.png" alt="ORTHO4XP V2 Banner" width="100%">
 </p>
 
 <div align="center">
