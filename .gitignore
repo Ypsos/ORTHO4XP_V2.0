@@ -130,10 +130,9 @@ _ortho_launch.sh
 
 # ── Lanceurs générés automatiquement ────────────────────────
 ORTHO4XP_V2_Lanceur.app/
-Lanceur_Installation_Prerequis.app/
-*.app/
+Lanceur ORTHO4XP.app/
 Filters/
 Filters copie/
-
+#-------
 *copie*
 Patches/
