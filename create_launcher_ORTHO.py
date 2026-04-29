@@ -55,19 +55,25 @@ def create_mac_app():
 #include <limits.h>
 #include <libgen.h>
 #include <stdint.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
     char path[PATH_MAX];
     uint32_t size = sizeof(path);
     extern int _NSGetExecutablePath(char* buf, uint32_t* bufsize);
     if (_NSGetExecutablePath(path, &size) == 0) {
-        char *base = dirname(path);      // MacOS/
-        char *contents = dirname(base);  // Contents/
-        char *app_root = dirname(contents); // Ortho4XP.app/
-        char *root = dirname(app_root);     // Dossier Parent
+        char t1[PATH_MAX], t2[PATH_MAX], t3[PATH_MAX], tmp[PATH_MAX], root[PATH_MAX];
+        strncpy(t1,  path,        PATH_MAX-1);
+        strncpy(t2,  dirname(t1), PATH_MAX-1);  // MacOS/
+        strncpy(t3,  dirname(t2), PATH_MAX-1);  // Contents/
+        strncpy(tmp, dirname(t3), PATH_MAX-1);  // Lanceur ORTHO4XP.app/
+        strncpy(root, dirname(tmp), PATH_MAX-1); // Dossier racine ORTHO4XP_V2/
+        char venv_py[PATH_MAX], launcher[PATH_MAX];
+        snprintf(venv_py,  sizeof(venv_py),  "%s/venv/bin/python3", root);
+        snprintf(launcher, sizeof(launcher), "%s/Ortho4XP_Launcher.py", root);
         chdir(root);
-        char *cmd[] = {"./venv/bin/python3", "Ortho4XP_Launcher.py", NULL};
-        execv(cmd[0], cmd);
+        char *cmd[] = {venv_py, launcher, NULL};
+        execv(venv_py, cmd);
     }
     return 1;
 }
@@ -111,6 +117,7 @@ int main(int argc, char **argv) {
     
     # Suppression de la quarantaine
     subprocess.run(["xattr", "-cr", str(app)], capture_output=True)
+    subprocess.run(["codesign", "--force", "--deep", "--sign", "-", str(app)], capture_output=True)
     return app
 
 # ══════════════════════════════════════════════════════════════════════════
