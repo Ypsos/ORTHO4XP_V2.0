@@ -1,0 +1,134 @@
+# ============================================================
+#  Ortho4XP V2 — .gitignore
+#  À placer à la RACINE de votre dossier Ortho4XP_V2
+# ============================================================
+
+# ── Dossiers de données lourds personnels ───────────────────
+Tiles/
+Orthophotos/
+Elevation_data/
+Extents/
+OSM/
+OSM_data/
+Masks/
+Imagery/
+tmp/
+Tmp/
+Cache/
+Custom_scenery/
+Output/
+Geotiffs/
+Color_check/
+
+# ── Providers personnels (garder uniquement Global et O4_Custom_URL.py) ──
+Providers/Austria/
+Providers/Belgium/
+Providers/Croatia/
+Providers/Czech_Republic_and_Slovakia/
+Providers/Denmark/
+Providers/Espagne/
+Providers/Estonia/
+Providers/Faroe/
+Providers/Finland/
+Providers/France/
+Providers/France*/
+Providers/Germany/
+Providers/Hollande/
+Providers/Hungary/
+Providers/Israel/
+Providers/Italy/
+Providers/Japan/
+Providers/Luxembourg/
+Providers/New_Zealand/
+Providers/Norway/
+Providers/Poland/
+Providers/Slovenia/
+Providers/Suisse/
+Providers/Sweden/
+Providers/United_States/
+Providers/EUR.comb
+Providers/ZonePhoto.comb
+Providers/__pycache__/
+
+# ── Fichiers de configuration personnels ────────────────────
+Ortho4XP.cfg
+*.cfg
+*.ini
+*.prefs
+*.pref
+.last_gui_params.txt
+
+# ── Fichiers de corrections couleur (données locales) ───────
+*.ccorr
+*.comb
+
+# ── Fichiers DDS / textures (très lourds) ───────────────────
+*.dds
+*.DDS
+*.jpg
+*.JPG
+*.jpeg
+*.png
+*.PNG
+*.tif
+*.tiff
+*.geotiff
+!BanniereGithub.png
+
+# ── Fichiers mesh et DSF (données de tuiles) ────────────────
+*.mesh
+*.dsf
+*.DSF
+*.tri
+*.pol
+
+# ── Logs et fichiers temporaires ────────────────────────────
+*.log
+*.tmp
+*.bak
+*.backup
+log.txt
+debug.txt
+
+# ── Python (bytecode compilé) ───────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── Environnement virtuel Python ────────────────────────────
+venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
+
+# ── macOS (fichiers système invisibles) ─────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# ── Éditeurs de code ────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Divers ──────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.7z
+Thumbs.db
+_ortho_launch.sh
+
+# ── Lanceurs générés automatiquement ────────────────────────
+ORTHO4XP_V2_Lanceur.app/
+Lanceur_Installation_Prerequis.app/
+*.app/

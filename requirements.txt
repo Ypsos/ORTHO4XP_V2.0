@@ -1,0 +1,30 @@
+# Ortho4XP V2 – Python dependencies
+# Install with:  pip install -r requirements.txt
+
+certifi>=2024.12.14
+charset-normalizer>=3.4.0
+click>=8.1.0
+click-plugins>=1.1.1
+cligj>=0.7.2
+customtkinter>=5.2.2
+darkdetect>=0.8.0
+fiona>=1.10.0
+idna>=3.10
+numpy>=2.2.0
+Pillow>=11.1.0
+psutil>=5.9.0
+pyproj>=3.7.1
+requests>=2.32.3
+Rtree>=1.3.0
+scipy>=1.12.0
+scikit-fmm>=2024.5.29
+Shapely>=2.0.7
+urllib3>=2.3.0
+
+# GDAL — installation spéciale selon plateforme :
+# macOS   : brew install gdal
+#           puis lien symbolique dans venv :
+#           ln -s $(brew --prefix gdal)/lib/python3.12/site-packages/osgeo \
+#                 venv/lib/python3.12/site-packages/osgeo
+# Linux   : sudo apt install python3-gdal  ou  pip install gdal==$(gdal-config --version)
+# Windows : pip install gdal (wheel précompilée depuis https://www.lfd.uci.edu/~gohlke/)
