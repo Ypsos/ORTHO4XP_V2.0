@@ -49,7 +49,7 @@ Providers/United_States/
 Providers/EUR.comb
 Providers/ZonePhoto.comb
 Providers/__pycache__/
-
+Providers/Global/Mapbox.lay
 # ── Fichiers de configuration personnels ────────────────────
 Ortho4XP.cfg
 *.cfg
