@@ -102,9 +102,7 @@ class Launcher(tk.Tk):
         self._log(f"Matériel : {cpu_total} CPUs | {ram_total} Go RAM\n")
         self._log(f"Config auto : {safe_slots} Slots | {safe_ram} Go RAM\n")
         if CFG_FILE.exists():
-            self._log("✅ Ortho4XP.cfg synchronisé.\n")
-        else:
-            self._log("⚠ Ortho4XP.cfg non trouvé.\n")
+            self._log("✅ Ortho4XP.cfg présent.\n")
         self._log("----------------------------------\n")
 
     def _log(self, msg):
@@ -456,7 +454,6 @@ int main(int argc, char **argv) {
     def check_integrity(self):
         self._log("Vérification fichiers...")
         self._log(f"{'✅' if ORTHO_PY.exists() else '❌'} Ortho4XP.py")
-        self._log(f"{'✅' if (CFG_FILE.exists() or CONF_FILE.exists()) else '❌'} Config")
         self._log(f"{'✅' if SRC_DIR.exists() else '❌'} Dossier src")
 
     # ── Création des lanceurs natifs ────────────────────────────────────
