@@ -134,3 +134,6 @@ Lanceur_Installation_Prerequis.app/
 *.app/
 Filters/
 Filters copie/
+
+*copie*
+Patches/
