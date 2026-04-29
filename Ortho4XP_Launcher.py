@@ -22,7 +22,6 @@ SYSTEM   = platform.system()
 ORTHO_PY    = BASE_DIR / "Ortho4XP.py"
 CFG_FILE    = BASE_DIR / "Ortho4XP.cfg"
 CONF_FILE   = BASE_DIR / "Ortho4XP.conf"
-COLOR_DIR   = BASE_DIR / "Color_check"
 SRC_DIR     = BASE_DIR / "src"
 
 if SYSTEM == "Windows":
@@ -199,8 +198,8 @@ class Launcher(tk.Tk):
         self._run_pip_install(pip_modules, " (venv macOS)")
         self._log("✅ rasterio installé — lecture TIF altimétrie autonome dans venv/")
 
-        # 4. Créer ORTHO4XP_V2_Lanceur.app
-        self._log("🔧 Création de ORTHO4XP_V2_Lanceur.app...")
+        # 4. Créer Lanceur ORTHO4XP.app
+        self._log("🔧 Création de Lanceur ORTHO4XP.app...")
         self._create_mac_launcher()
 
     def _create_launcher_mac(self):
@@ -295,8 +294,8 @@ class Launcher(tk.Tk):
         self._run_pip_install(pip_modules, " (venv Linux)")
         self._log("✅ rasterio installé — lecture TIF altimétrie autonome dans venv/")
         self._create_daily_launcher()
-        # Créer ORTHO4XP_V2_Lanceur.desktop
-        self._log("🔧 Création de ORTHO4XP_V2_Lanceur.desktop...")
+        # Créer Lanceur ORTHO4XP.desktop
+        self._log("🔧 Création de Lanceur ORTHO4XP.desktop...")
         self._create_linux_launcher()
 
     def _install_windows(self):
@@ -309,15 +308,15 @@ class Launcher(tk.Tk):
         self._run_pip_install(pip_modules, " (venv Windows)")
         self._log("✅ rasterio installé — lecture TIF altimétrie autonome dans venv/")
         self._create_daily_launcher()
-        # Créer ORTHO4XP_V2_Lanceur.vbs
-        self._log("🔧 Création de ORTHO4XP_V2_Lanceur.vbs...")
+        # Créer Lanceur ORTHO4XP.vbs
+        self._log("🔧 Création de Lanceur ORTHO4XP.vbs...")
         self._create_windows_launcher()
 
 
 
 
     def _create_daily_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur selon la plateforme — utilise le venv."""
+        """Crée Lanceur ORTHO4XP selon la plateforme — utilise le venv."""
         import stat as st
 
         if SYSTEM == "Darwin":
@@ -328,7 +327,7 @@ class Launcher(tk.Tk):
             self._create_linux_daily_launcher()
 
     def _create_mac_daily_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.app — binaire C qui lance le Launcher via venv."""
+        """Crée Lanceur ORTHO4XP.app — binaire C qui lance le Launcher via venv."""
         import shutil, stat as st
 
         LAUNCHER_C = r"""
@@ -385,7 +384,7 @@ int main(int argc, char **argv) {
     <key>NSHighResolutionCapable</key><true/>
 </dict></plist>"""
 
-        app_path = BASE_DIR / "ORTHO4XP_V2_Lanceur.app"
+        app_path = BASE_DIR / "Lanceur ORTHO4XP.app"
         macos_dir = app_path / "Contents" / "MacOS"
         res_dir   = app_path / "Contents" / "Resources"
 
@@ -417,13 +416,13 @@ int main(int argc, char **argv) {
                 subprocess.run(["codesign","--force","--deep","--sign","-",str(app_path)],
                                capture_output=True, timeout=30)
             except Exception: pass
-            self._log("✅ ORTHO4XP_V2_Lanceur.app créé — double-clic pour lancer Ortho4XP !")
+            self._log("✅ Lanceur ORTHO4XP.app créé — double-clic pour lancer Ortho4XP !")
         else:
             self._log("⚠️  Compilation échouée — Lanceur non créé.")
 
     def _create_windows_daily_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.vbs pour Windows."""
-        vbs = BASE_DIR / "ORTHO4XP_V2_Lanceur.vbs"
+        """Crée Lanceur ORTHO4XP.vbs pour Windows."""
+        vbs = BASE_DIR / "Lanceur ORTHO4XP.vbs"
         vbs.write_text(
             "Dim ws,fso,d,py,la\n"
             "Set ws=CreateObject(\"WScript.Shell\")\n"
@@ -436,37 +435,36 @@ int main(int argc, char **argv) {
             "  WScript.Quit\nEnd If\n"
             "ws.Run Chr(34)&py&Chr(34)&\" \"&Chr(34)&la&Chr(34),1,False\n",
             encoding="utf-8")
-        self._log("✅ ORTHO4XP_V2_Lanceur.vbs créé !")
+        self._log("✅ Lanceur ORTHO4XP.vbs créé !")
 
     def _create_linux_daily_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.desktop pour Linux."""
+        """Crée Lanceur ORTHO4XP.desktop pour Linux."""
         import stat as st
-        sh = BASE_DIR / "ORTHO4XP_V2_Lanceur.sh"
+        sh = BASE_DIR / "Lanceur ORTHO4XP.sh"
         sh.write_text(
             f'''#!/bin/bash\ncd "{BASE_DIR}"\nexec "./venv/bin/python3" "Ortho4XP_Launcher.py"\n''',
             encoding="utf-8")
         sh.chmod(sh.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
-        desktop = BASE_DIR / "ORTHO4XP_V2_Lanceur.desktop"
+        desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
             f"[Desktop Entry]\nVersion=2.0\nName=ORTHO4XP V2 Lanceur\n"
             f"Exec={sh}\nPath={BASE_DIR}\nTerminal=false\nType=Application\n",
             encoding="utf-8")
         desktop.chmod(desktop.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
-        self._log("✅ ORTHO4XP_V2_Lanceur.desktop créé !")
+        self._log("✅ Lanceur ORTHO4XP.desktop créé !")
 
     def check_integrity(self):
         self._log("Vérification fichiers...")
         self._log(f"{'✅' if ORTHO_PY.exists() else '❌'} Ortho4XP.py")
         self._log(f"{'✅' if (CFG_FILE.exists() or CONF_FILE.exists()) else '❌'} Config")
-        self._log(f"{'✅' if COLOR_DIR.exists() else '❌'} Color_check")
         self._log(f"{'✅' if SRC_DIR.exists() else '❌'} Dossier src")
 
     # ── Création des lanceurs natifs ────────────────────────────────────
 
     def _create_mac_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.app — double-clic pour ouvrir le Launcher."""
+        """Crée Lanceur ORTHO4XP.app — double-clic pour ouvrir le Launcher."""
         import shutil, stat as st_mod
-        app_path  = BASE_DIR / "ORTHO4XP_V2_Lanceur.app"
+        app_path  = BASE_DIR / "Lanceur ORTHO4XP.app"
         macos_dir = app_path / "Contents" / "MacOS"
         res_dir   = app_path / "Contents" / "Resources"
         if app_path.exists():
@@ -508,12 +506,12 @@ exec "$ROOT/venv/bin/python3" "$ROOT/Ortho4XP_Launcher.py"
                            capture_output=True, timeout=30)
         except Exception: pass
 
-        self._log(f"✅ ORTHO4XP_V2_Lanceur.app créé — double-clic pour lancer !")
+        self._log(f"✅ Lanceur ORTHO4XP.app créé — double-clic pour lancer !")
 
     def _create_linux_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.desktop + .sh"""
+        """Crée Lanceur ORTHO4XP.desktop + .sh"""
         import stat as st_mod
-        sh_path = BASE_DIR / "ORTHO4XP_V2_Lanceur.sh"
+        sh_path = BASE_DIR / "Lanceur ORTHO4XP.sh"
         sh_path.write_text(
             f'''#!/bin/bash
 cd "{BASE_DIR}"
@@ -521,24 +519,24 @@ exec "./venv/bin/python3" "Ortho4XP_Launcher.py"
 ''', encoding="utf-8")
         sh_path.chmod(sh_path.stat().st_mode | st_mod.S_IEXEC | st_mod.S_IXGRP | st_mod.S_IXOTH)
 
-        desktop = BASE_DIR / "ORTHO4XP_V2_Lanceur.desktop"
+        desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
             f"[Desktop Entry]\nVersion=2.0\nName=ORTHO4XP V2 Lanceur\n"
             f"Exec={sh_path}\nPath={BASE_DIR}\n"
             f"Terminal=false\nType=Application\nCategories=Utility;\n",
             encoding="utf-8")
         desktop.chmod(desktop.stat().st_mode | st_mod.S_IEXEC | st_mod.S_IXGRP | st_mod.S_IXOTH)
-        self._log("✅ ORTHO4XP_V2_Lanceur.desktop créé — double-clic pour lancer !")
+        self._log("✅ Lanceur ORTHO4XP.desktop créé — double-clic pour lancer !")
 
     def _create_windows_launcher(self):
-        """Crée ORTHO4XP_V2_Lanceur.vbs"""
-        vbs = BASE_DIR / "ORTHO4XP_V2_Lanceur.vbs"
+        """Crée Lanceur ORTHO4XP.vbs"""
+        vbs = BASE_DIR / "Lanceur ORTHO4XP.vbs"
         vbs.write_text(
             f'Dim ws : Set ws = CreateObject("WScript.Shell")\n'
             f'ws.Run Chr(34) & "{BASE_DIR / "venv" / "Scripts" / "pythonw.exe"}" & Chr(34)'
             f' & " " & Chr(34) & "{BASE_DIR / "Ortho4XP_Launcher.py"}" & Chr(34), 1, False\n',
             encoding="utf-8")
-        self._log("✅ ORTHO4XP_V2_Lanceur.vbs créé — double-clic pour lancer !")
+        self._log("✅ Lanceur ORTHO4XP.vbs créé — double-clic pour lancer !")
 
     def launch_ortho(self):
         py_exe = str(VENV_PY) if VENV_PY.exists() else sys.executable
