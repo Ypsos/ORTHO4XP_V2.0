@@ -1,0 +1,5 @@
+grid_type=webmercator
+url_template=https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{zoom}/{y}/{x}
+imagery_dir=grouped
+imagery_dir=code
+in_GUI=True

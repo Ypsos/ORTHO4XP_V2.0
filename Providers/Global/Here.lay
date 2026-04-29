@@ -1,0 +1,6 @@
+#wego.here.com
+#custom url due to changing http values
+grid_type=webmercator
+max_threads=16
+imagery_dir=grouped
+#https://maps.hereapi.com/v3/background/mc/{zoom}/{x}/{y}/jpeg?xnlp=CL_JSMv3.1.58.0&apikey=qKa9-t3AFczkGxRvrmflMBlBenVG5GhHesDtVPlH_SI&style=satellite.day&ppi=100&size=512&lang=fr&lang2=en

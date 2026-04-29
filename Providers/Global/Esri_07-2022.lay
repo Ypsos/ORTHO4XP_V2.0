@@ -1,0 +1,4 @@
+grid_type=webmercator
+url_template=https://wayback.maptiles.arcgis.com/arcgis/rest/services/world_imagery/wmts/1.0.0/default028mm/mapserver/tile/16245/{zoom}/{y}/{x}
+imagery_dir=code
+in_GUI=True

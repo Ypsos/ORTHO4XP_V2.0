@@ -1,0 +1,5 @@
+grid_type=webmercator
+url_template=https://sat04.maps.yandex.net/tiles?l=sat&v=3.2014.0&x={x}&y={y}&z={zoom}&scale=1
+imagery_dir=code
+in_GUI=True
+
