@@ -18,7 +18,6 @@ Cache/
 Custom_scenery/
 Output/
 Geotiffs/
-Color_check/
 
 # ── Providers personnels (garder uniquement Global et O4_Custom_URL.py) ──
 Providers/Austria/
