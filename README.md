@@ -81,14 +81,30 @@ L'objectif est de lever définitivement la barrière technique du terminal. Cett
 
 ## 🛠 Utilisation rapide
 
-1. Consultez impérativement le fichier `AVERTISSEMENT_LICENCE_LEGAL.md`
-2. Téléchargez le dépôt — **Download ZIP**
-3. Décompressez l'archive
-4. Renommez le dossier en `ORTHO4XP_V2`
+### 🍎 Mac
 
-> **⚠️ Mac uniquement** : Placez le dossier `ORTHO4XP_V2` dans votre dossier **`/Users/votre_nom/Applications/`** avant de lancer — le lanceur ne fonctionnera pas depuis le Bureau ou les Téléchargements.
+> **⚠️ Étape obligatoire avant tout** — Téléchargez d'abord le lanceur pré-nettoyé (sans blocage Gatekeeper) :
+> **[⬇️ Télécharger ORTHO4XP-V2_LANCEUR MAC PRE-INSTALL](https://github.com/Ypsos/ORTHO4XP_V2/releases/tag/V2)**
 
-5. Double-cliquez sur `Lanceur_Installation_Prerequis.app` (Mac) / `Lanceur_Installation_Prerequis.vbs` (Windows) / `Lanceur_Installation_Prerequis.sh` (Linux)
+1. Téléchargez l'archive principale **ORTHO4XP_V2** (bouton vert "Code" → "Download ZIP")
+2. Décompressez l'archive — renommez le dossier en `ORTHO4XP_V2`
+3. Téléchargez le ZIP de la Release ci-dessus et extrayez `Lanceur_Installation_Prerequis.app` directement dans le dossier `ORTHO4XP_V2`
+4. Placez le dossier `ORTHO4XP_V2` dans votre dossier **`Applications`** (`/Users/votre_nom/Applications/`)
+5. Double-cliquez sur `Lanceur_Installation_Prerequis.app`
+
+---
+
+### 🪟 Windows
+
+1. Téléchargez l'archive principale **ORTHO4XP_V2** et décompressez
+2. Double-cliquez sur `LANCEUR_INSTALL_WINDOWS.bat`
+
+---
+
+### 🐧 Linux
+
+1. Téléchargez l'archive principale **ORTHO4XP_V2** et décompressez
+2. Double-cliquez sur `LANCEUR_INSTALL_LINUX.sh`
 
 ---
 
