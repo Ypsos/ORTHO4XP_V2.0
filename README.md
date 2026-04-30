@@ -7,7 +7,7 @@
   <p><strong>La version moderne d'Ortho4XP</strong><br>
   Installation automatique • Sans terminal • Pour X-Plane 12</p>
   <br>
-  <a href="https://github.com/Ypsos/ORTHO4XP_V2/archive/refs/heads/ORTHO4XP_V2.zip">
+  <a href="https://github.com/Ypsos/ORTHO4XP_V2/releases/latest">
     <img src="https://img.shields.io/badge/TÉLÉCHARGER%20LA%20DERNIÈRE%20VERSION-00C853?style=for-the-badge&logo=download&logoColor=white" height="55">
   </a>
 </div>
@@ -82,18 +82,13 @@ L'objectif est de lever définitivement la barrière technique du terminal. Cett
 ## 🛠 Utilisation rapide
 
 1. Consultez impérativement le fichier `AVERTISSEMENT_LICENCE_LEGAL.md`
-2. Cliquez sur le bouton vert **TÉLÉCHARGER LA DERNIÈRE VERSION** ci-dessus
-3. Décompressez l'archive ZIP sur votre ordinateur
-4. Ouvrez le dossier décompressé et double-cliquez sur le fichier correspondant à votre système :
+2. Téléchargez le dépôt — **Download ZIP**
+3. Décompressez l'archive
+4. Renommez le dossier en `ORTHO4XP_V2`
 
-| Système | Fichier à double-cliquer |
-|---|---|
-| 🍎 **macOS** | `Lanceur_Installation_Prerequis_MAC.app` |
-| 🪟 **Windows** | `LANCEUR_INSTALL_WINDOWS.bat` |
-| 🐧 **Linux** | `LANCEUR_INSTALL_LINUX.sh` |
+> **⚠️ Mac uniquement** : Placez le dossier `ORTHO4XP_V2` dans votre dossier **`/Users/votre_nom/Applications/`** avant de lancer — le lanceur ne fonctionnera pas depuis le Bureau ou les Téléchargements.
 
-L'installation démarre automatiquement — Python, l'environnement et tous les modules sont installés sans aucune intervention.  
-À la fin, le **Lanceur ORTHO4XP** s'ouvre directement.
+5. Double-cliquez sur `Lanceur_Installation_Prerequis.app` (Mac) / `Lanceur_Installation_Prerequis.vbs` (Windows) / `Lanceur_Installation_Prerequis.sh` (Linux)
 
 ---
 
@@ -112,5 +107,3 @@ L'installation démarre automatiquement — Python, l'environnement et tous les 
 
 Distribué sous **GNU GPL v3** dans le respect de la licence du projet original.  
 Voir `AVERTISSEMENT_LICENCE_LEGAL.md` pour les détails complets.
-
-
