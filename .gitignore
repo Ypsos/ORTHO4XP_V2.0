@@ -73,6 +73,7 @@ Ortho4XP.cfg
 *.tiff
 *.geotiff
 !BanniereGithub.png
+!Utils/water_transition.png
 
 # ── Fichiers mesh et DSF (données de tuiles) ────────────────
 *.mesh
