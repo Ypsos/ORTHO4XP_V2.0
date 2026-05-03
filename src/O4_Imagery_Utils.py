@@ -1,3 +1,4 @@
+# Version validée 30 avril 2026
 from O4_Parallel_Utils import parallel_execute
 import O4_Mask_Utils as MASK
 import O4_OSM_Utils as OSM
