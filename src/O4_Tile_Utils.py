@@ -36,6 +36,18 @@ def download_textures(tile, download_queue, convert_queue):
                 2, int(100 * done / (done + download_queue.qsize()))
             )
             convert_queue.put((tile, *texture_attributes))
+        else:
+            # Fallback maritime : EOX Sentinel-2 pour zones sans JPG en mer
+            try:
+                import O4_Sea_Texture as _SEA
+                if _SEA.download_sea_jpeg(tile, *texture_attributes):
+                    done += 1
+                    UI.progress_bar(
+                        2, int(100 * done / (done + download_queue.qsize()))
+                    )
+                    convert_queue.put((tile, *texture_attributes))
+            except Exception as _se:
+                UI.vprint(2, f"   [SeaTex] fallback : {_se}")
 
         if UI.red_flag:
             UI.vprint(1, "Download process interrupted.")
@@ -75,9 +87,6 @@ def build_tile(tile):
         UI.exit_message_and_bottom_line("")
         return 0
 
-    # Correction bug sea_overlay pour XP12
-    IMG.skip_pure_sea_textures = True
-
     try:
         if not os.path.exists(
             os.path.join(
@@ -115,41 +124,6 @@ def build_tile(tile):
         UI.vprint(3, e)
         UI.exit_message_and_bottom_line("")
         return 0
-
-    # Pré-génération des masques côtiers depuis le mesh AVANT build_dsf.
-    # Sans cette étape, needs_mask() dans DSF ne trouve aucun PNG → pas de _sea.ter
-    # → XP12 ne voit pas l'eau transparente. Les masques sont sauvegardés dans
-    # Masks/ exactement comme les masques GIMP manuels : même format, même chemin.
-    try:
-        import O4_Mask_Utils as _MASK
-        import O4_Coastal_Manager as _COAST
-        import O4_File_Names as _FNAMES
-        (dico_sea, _) = _MASK.record_water_tris(tile)
-        if dico_sea:
-            mask_zl = int(getattr(tile, "mask_zl", 15))
-            keys_done = set()
-            for (tx, ty) in dico_sea.keys():
-                key = ((tx // 16) * 16, (ty // 16) * 16)
-                if key in keys_done:
-                    continue
-                keys_done.add(key)
-                mask_path = os.path.join(
-                    _FNAMES.mask_dir(tile.lat, tile.lon),
-                    _FNAMES.legacy_mask(key[0], key[1])
-                )
-                if not os.path.isfile(mask_path):
-                    _prov = IMG.providers_dict.get(tile.default_website)
-                    if _prov:
-                        _jdir = _FNAMES.jpeg_file_dir_from_attributes(
-                            tile.lat, tile.lon, mask_zl, _prov)
-                        _jname = _FNAMES.jpeg_file_name_from_attributes(
-                            key[0], key[1], mask_zl, tile.default_website)
-                        if os.path.isfile(os.path.join(_jdir, _jname)):
-                            _COAST.generate_coastal_mask_from_mesh(
-                                tile, key[0], key[1], mask_zl, dico_sea)
-            UI.vprint(1, f"   [Coastal] Pré-génération masques côtiers : {len(keys_done)} clé(s) traitée(s).")
-    except Exception as _cpe:
-        UI.vprint(2, f"   [Coastal] Pré-génération masques : {_cpe}")
 
     download_queue = queue.Queue()
     convert_queue = queue.Queue()

@@ -20,6 +20,7 @@ Patch_dir = os.path.join(Ortho4XP_dir, "Patches")
 Utils_dir = os.path.join(Ortho4XP_dir, "Utils")
 Tile_dir = os.path.join(Ortho4XP_dir, "Tiles")
 Tmp_dir = os.path.join(Ortho4XP_dir, "tmp")
+os.makedirs(Tmp_dir, exist_ok=True)
 Overlay_dir = os.path.join(Ortho4XP_dir, "yOrtho4XP_Overlays")
 ##############################################################################
 def short_latlon(lat, lon):
@@ -195,9 +196,10 @@ def mesh_file(build_dir, lat, lon):
 
 
 def dsf_file(build_dir, lat, lon):
-    return os.path.join(
-        build_dir, "Earth nav data", long_latlon(lat, lon) + ".dsf"
-    )
+    if "Earth nav data" in build_dir:
+        return os.path.join(build_dir, long_latlon(lat, lon) + ".dsf")
+    else:
+        return os.path.join(build_dir, "Earth nav data", long_latlon(lat, lon) + ".dsf")
 
 
 def obj_file(til_x_left, til_y_top, zoomlevel, provider_code):

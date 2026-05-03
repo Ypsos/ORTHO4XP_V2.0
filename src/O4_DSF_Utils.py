@@ -364,12 +364,7 @@ def extract_elevation_and_bathymetry_data(lat, lon):
         FNAMES.long_latlon(lat, lon) + ".dsf",
     )
     if not os.path.exists(global_scenery_dsf):
-        UI.exit_message_and_bottom_line(
-            "   ERROR: file ",
-            global_scenery_dsf,
-            "absent. Global Scenery directory needs to be set in the config ",
-            "window first.",
-        )
+        UI.vprint(1, "   WARNING: Global Scenery DSF absent, bathymetry skipped.")
         return (b"", b"")
     tmp_file = os.path.join(
         FNAMES.Tmp_dir, FNAMES.short_latlon(lat, lon) + ".dsf"
@@ -378,10 +373,7 @@ def extract_elevation_and_bathymetry_data(lat, lon):
     try:
         shutil.copy(global_scenery_dsf, tmp_file)
     except:
-        UI.exit_message_and_bottom_line(
-            "     ERROR: could not copy it. Disk full, write permissions,",
-            " erased tmp dir ?",
-        )
+        UI.vprint(1, "   WARNING: could not copy Global Scenery DSF, bathymetry skipped.")
         return (b"", b"")
 
     f = open(tmp_file, "rb")
@@ -389,18 +381,27 @@ def extract_elevation_and_bathymetry_data(lat, lon):
     f.close()
     if dsfid == "7z":
         UI.vprint(2, "     The original DSF is a 7z archive, uncompressing...")
-        os.replace(tmp_file, tmp_file + ".7z")
-        os.system(
-            OVL.unzip_cmd + " e -o" + FNAMES.Tmp_dir + ' "' + tmp_file + '.7z"'
-        )
-        os.remove(tmp_file + '.7z')
+        try:
+            import py7zr
+            os.replace(tmp_file, tmp_file + ".7z")
+            with py7zr.SevenZipFile(tmp_file + ".7z", mode='r') as archive:
+                archive.extractall(path=FNAMES.Tmp_dir)
+            os.remove(tmp_file + ".7z")
+        except Exception as _7ze:
+            UI.vprint(1, "   WARNING: 7z decompression failed, bathymetry skipped.", str(_7ze))
+            try: os.remove(tmp_file)
+            except: pass
+            try: os.remove(tmp_file + ".7z")
+            except: pass
+            return (b"", b"")
     file_len = os.path.getsize(tmp_file)
     f = open(tmp_file, "rb")
     # read filetype cookie
     dsfid = f.read(8).decode("ascii")
     if dsfid != "XPLNEDSF":
-        UI.exit_message_and_bottom_line("     ERROR: Corrupted DSF file.")
-        os.remove(tmp_file)
+        UI.vprint(1, "   WARNING: Corrupted Global Scenery DSF, bathymetry skipped.")
+        try: os.remove(tmp_file)
+        except: pass
         return (b"", b"")
     # skip format number
     f.read(4)

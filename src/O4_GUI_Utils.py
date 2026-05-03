@@ -386,6 +386,12 @@ class Ortho4XP_GUI(tk.Tk):
             f.write(self.custom_build_dir.get() + "\n")
             f.close()
         except: pass
+        # Supprimer les .pyc en cache pour éviter les conflits au prochain démarrage
+        try:
+            import pathlib
+            for pyc in pathlib.Path(os.path.join(FNAMES.Ortho4XP_dir, "src")).rglob("*.pyc"):
+                pyc.unlink()
+        except: pass
         self.destroy()
 
     # ── Build ──────────────────────────────────────────────────────────
