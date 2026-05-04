@@ -540,7 +540,7 @@ exec "./venv/bin/python3" "Ortho4XP_Launcher.py"
         if ORTHO_PY.exists():
             env = os.environ.copy()
             env["PYTHONPATH"] = str(SRC_DIR)
-            subprocess.Popen([py_exe, str(ORTHO_PY)], cwd=str(BASE_DIR), env=env)
+            subprocess.Popen([py_exe, str(ORTHO_PY)], cwd=str(BASE_DIR), env=env, shell=False)
             self._log("🚀 Ortho4XP lancé !")
             self.after(1500, self.destroy)
         else: self._log("❌ Ortho4XP.py introuvable.")
