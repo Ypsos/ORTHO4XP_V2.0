@@ -19,6 +19,15 @@ SHADOW_COLOR  = "#2a4235"
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).resolve()
 SYSTEM   = platform.system()
 
+# ── Traduction bilingue ──────────────────────────────────────────────────────
+sys.path.insert(0, str(BASE_DIR / "src"))
+try:
+    import O4_Lang
+    O4_Lang.init()   # charge langue depuis Ortho4XP.cfg, silencieux
+    from O4_Lang import tr
+except Exception:
+    def tr(k): return k   # fallback si O4_Lang absent
+
 # ── Vérification nom de dossier GitHub ──────────────────────────────────────
 # GitHub crée automatiquement un double nom : ORTHO4XP-V2-ORTHO4XP_V2
 # Le lanceur fonctionne quand même, mais on avertit l'utilisateur pour éviter
@@ -115,13 +124,13 @@ class Launcher(tk.Tk):
 
         col1 = tk.Frame(btn_container, bg=BG_GLOBAL)
         col1.grid(row=0, column=0, padx=15)
-        HoverButton(col1, "1. Installer les Modules", self.open_install_menu).pack(pady=8)
+        HoverButton(col1, tr("1. Installer les Modules"), self.open_install_menu).pack(pady=8)
         col2 = tk.Frame(btn_container, bg=BG_GLOBAL)
         col2.grid(row=0, column=1, padx=15)
-        HoverButton(col2, "🔍 Vérifier Intégrité", self.check_integrity).pack(pady=8)
+        HoverButton(col2, tr("🔍 Vérifier Intégrité"), self.check_integrity).pack(pady=8)
 
         # Gros bouton LANCER en dessous
-        HoverButton(self, "▶️ LANCER ORTHO4XP", self.launch_ortho, 
+        HoverButton(self, tr("▶️ LANCER ORTHO4XP"), self.launch_ortho, 
                     width=800, height=70, font_size=20).pack(pady=(25, 30))
 
         self._log(f"📍 Dossier : {BASE_DIR}")
@@ -149,13 +158,13 @@ class Launcher(tk.Tk):
     def open_install_menu(self):
         """Ouvre la fenêtre de sélection de plateforme pour l'installation."""
         win = tk.Toplevel(self)
-        win.title("Installer les Modules — Choisir la plateforme")
+        win.title(tr("Installer les Modules — Choisir la plateforme"))
         win.configure(bg=BG_GLOBAL)
         win.resizable(False, False)
 
-        tk.Label(win, text="Installer les Modules",
+        tk.Label(win, text=tr("Installer les Modules"),
                  font=("Helvetica", 22, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(20, 4))
-        tk.Label(win, text="Tout s'installe dans venv/ — rien dans le système",
+        tk.Label(win, text=tr("Tout s'installe dans venv/ — rien dans le système"),
                  font=("Helvetica", 12), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(0, 16))
 
         # Boutons plateformes — plateforme courante mise en évidence
@@ -173,7 +182,7 @@ class Launcher(tk.Tk):
 
         # ── Séparateur ───────────────────────────────────────────────────
         tk.Frame(win, bg="#2a6b45", height=2).pack(fill="x", padx=30, pady=(10, 6))
-        tk.Label(win, text="Créer le lanceur Ortho4XP (double-clic quotidien)",
+        tk.Label(win, text=tr("Créer le lanceur Ortho4XP (double-clic quotidien)"),
                  font=("Helvetica", 12, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(0, 6))
 
         launchers = [

@@ -453,6 +453,15 @@ if HAS_TK:
     class InstallApp(tk.Tk):
         def __init__(self):
             super().__init__()
+
+            # ══════════════════════════════════════════════════════════════
+            #  SÉLECTION DE LANGUE — sauvegardée dans Ortho4XP.cfg
+            # ══════════════════════════════════════════════════════════════
+            self.withdraw()                          # cache pendant le choix
+            self._lang = self._ask_language()
+            self._save_language(self._lang)
+            self.deiconify()                         # réaffiche la fenêtre
+
             # ── Tailles identiques à Ortho4XP_Launcher — macOS scale auto en 4K ──
             fsize_title  = 36
             fsize_sub    = 14
@@ -515,6 +524,93 @@ if HAS_TK:
             self._log(f"Dossier Ortho4XP   : {BASE_DIR}")
             self._log("")
             self._check_existing()
+        # ── Sélection de langue ─────────────────────────────────────────────────
+        def _ask_language(self):
+            """
+            Dialogue bilingue de sélection de langue.
+            Lit Ortho4XP.cfg — si 'language=' déjà présent, retourne
+            directement le code sans afficher le dialogue.
+            """
+            # Lire langue déjà sauvegardée
+            cfg_path = BASE_DIR / "Ortho4XP.cfg"
+            if cfg_path.exists():
+                try:
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line.startswith("language="):
+                                code = line.split("=", 1)[1].strip().upper()
+                                if code in ("EN", "FR"):
+                                    return code
+                except Exception:
+                    pass
+
+            # Dialogue de choix
+            result = ["EN"]
+            dlg = tk.Toplevel(self)
+            dlg.title("Language / Langue")
+            dlg.configure(bg=BG_GLOBAL)
+            dlg.resizable(False, False)
+            dlg.geometry("360x200")
+            dlg.grab_set()
+
+            # Centrage écran
+            dlg.update_idletasks()
+            sw = dlg.winfo_screenwidth()
+            sh = dlg.winfo_screenheight()
+            x = (sw - 360) // 2
+            y = (sh - 200) // 2
+            dlg.geometry(f"360x200+{x}+{y}")
+
+            tk.Label(dlg,
+                     text="🌐  Choose your language / Choisissez votre langue :",
+                     bg=BG_GLOBAL, fg=GREEN_OK,
+                     font=("Helvetica", 12, "bold"),
+                     wraplength=340, justify="center").pack(pady=22)
+
+            btn_fr = tk.Frame(dlg, bg=BG_GLOBAL)
+            btn_fr.pack()
+
+            def _pick(code):
+                result[0] = code
+                dlg.destroy()
+
+            tk.Button(btn_fr, text="🇬🇧  English",
+                      bg=BTN_COLOR, fg=BTN_TEXT,
+                      font=("Helvetica", 13, "bold"),
+                      width=12, height=2,
+                      command=lambda: _pick("EN")).pack(side="left", padx=16)
+
+            tk.Button(btn_fr, text="🇫🇷  Français",
+                      bg=BTN_COLOR, fg=BTN_TEXT,
+                      font=("Helvetica", 13, "bold"),
+                      width=12, height=2,
+                      command=lambda: _pick("FR")).pack(side="left", padx=16)
+
+            self.wait_window(dlg)
+            return result[0]
+
+        def _save_language(self, code):
+            """Écrit language=XX dans Ortho4XP.cfg sans toucher aux autres lignes."""
+            cfg_path = BASE_DIR / "Ortho4XP.cfg"
+            try:
+                lines = []
+                found = False
+                if cfg_path.exists():
+                    with open(cfg_path, "r", encoding="utf-8") as f:
+                        lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        if line.strip().startswith("language="):
+                            lines[i] = f"language={code}\n"
+                            found = True
+                            break
+                if not found:
+                    lines.append(f"language={code}\n")
+                with open(cfg_path, "w", encoding="utf-8") as f:
+                    f.writelines(lines)
+            except Exception as e:
+                print(f"[INSTALL] Cannot save language: {e}")
+
         # ── Vérification état initial ────────────────────────────────────────────
         def _check_existing(self):
             py = find_python312()

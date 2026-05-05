@@ -20,6 +20,7 @@ import O4_UI_Utils as UI
 import O4_Config_Utils as CFG
 import O4_Color_Normalize as CNORM
 import O4_Color_Check as CC
+from O4_Lang import tr
 
 OsX = "dar" in sys.platform
 
@@ -118,24 +119,24 @@ class Ortho4XP_GUI(tk.Tk):
 
         self.lat = tk.StringVar()
         self.lat.trace_add("write", self.tile_change)
-        tk.Label(self.frame_tile, text="Latitude:",  bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Latitude:"),  bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
         self.lat_entry = tk.Entry(self.frame_tile, width=5, bg="#f0f4f2", fg="#1e3028", textvariable=self.lat)
         self.lat_entry.grid(row=0, column=1, padx=5, pady=5, sticky=W)
 
         self.lon = tk.StringVar()
         self.lon.trace_add("write", self.tile_change)
-        tk.Label(self.frame_tile, text="Longitude:", bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Longitude:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=5, pady=5, sticky=E+W)
         self.lon_entry = tk.Entry(self.frame_tile, width=5, bg="#f0f4f2", fg="#1e3028", textvariable=self.lon)
         self.lon_entry.grid(row=0, column=3, padx=5, pady=5, sticky=W)
 
-        tk.Label(self.frame_tile, text="Imagery:", bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=4, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Imagery:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=4, padx=5, pady=5, sticky=E+W)
         self.default_website = tk.StringVar()
         self.default_website.trace_add("write", self.update_cfg)
         self.img_combo = ttk.Combobox(self.frame_tile, values=self.map_list,
             textvariable=self.default_website, state="readonly", width=40)
         self.img_combo.grid(row=0, column=5, padx=5, pady=5, sticky=W)
 
-        tk.Label(self.frame_tile, text="Zoomlevel:", bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=6, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Zoomlevel:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=6, padx=5, pady=5, sticky=E+W)
         self.default_zl = tk.StringVar()
         self.default_zl.trace_add("write", self.update_cfg)
         self.zl_combo = ttk.Combobox(self.frame_tile, values=self.zl_list,
@@ -158,13 +159,18 @@ class Ortho4XP_GUI(tk.Tk):
         _icon_btn(self.frame_tile, self.stop_icon,   "🛑", self.set_red_flag,          12)
         _icon_btn(self.frame_tile, self.exit_icon,   "⏻",  self.exit_prg,             13)
 
+        # Bouton sélection langue 🌐
+        from O4_Lang import make_language_button
+        make_language_button(self.frame_tile).grid(
+            row=0, column=14, rowspan=2, padx=4, pady=2)
+
 
         # ── FRAME FOLDER (ligne 1 : Base Folder) ──────────────────────
         self.frame_folder = tk.Frame(self.frame_top, border=0, padx=5, pady=0, bg="#3b5b49")
         self.frame_folder.grid(row=1, column=0, sticky=N+S+W+E)
         self.frame_folder.columnconfigure(1, weight=1)
 
-        tk.Label(self.frame_folder, text="Base Folder:", bg="#3b5b49", fg="#e8f0ec").grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_folder, text=tr("Base Folder:"), bg="#3b5b49", fg="#e8f0ec").grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
         self.custom_build_dir = tk.StringVar()
         self.custom_build_dir_entry = tk.Entry(self.frame_folder, bg="#f0f4f2", fg="#1e3028",
             textvariable=self.custom_build_dir)
@@ -181,20 +187,20 @@ class Ortho4XP_GUI(tk.Tk):
         self.frame_steps.grid(row=2, column=0, sticky=N+S+W+E)
         for i in range(5): self.frame_steps.columnconfigure(i, weight=1)
 
-        ttk.Button(self.frame_steps, text="Assemble Vector data", command=self.build_poly_file).grid(
+        ttk.Button(self.frame_steps, text=tr("Assemble Vector data"), command=self.build_poly_file).grid(
             row=0, column=0, padx=5, pady=0, sticky=N+S+E+W)
-        build_mesh_button = ttk.Button(self.frame_steps, text="Triangulate 3D Mesh")
+        build_mesh_button = ttk.Button(self.frame_steps, text=tr("Triangulate 3D Mesh"))
         build_mesh_button.grid(row=0, column=1, padx=5, pady=0, sticky=N+S+E+W)
         build_mesh_button.bind("<ButtonPress-1>",         self.build_mesh)
         build_mesh_button.bind("<Shift-ButtonPress-1>",   self.sort_mesh)
         build_mesh_button.bind("<Control-ButtonPress-1>", self.community_mesh)
-        build_masks_button = ttk.Button(self.frame_steps, text=" Draw Water Masks  ")
+        build_masks_button = ttk.Button(self.frame_steps, text=tr(" Draw Water Masks  "))
         build_masks_button.grid(row=0, column=2, padx=5, pady=0, sticky=N+S+E+W)
         build_masks_button.bind("<ButtonPress-1>",       self.build_masks)
         build_masks_button.bind("<Shift-ButtonPress-1>", self.build_masks)
-        ttk.Button(self.frame_steps, text=" Build Imagery/DSF ", command=self.build_tile).grid(
+        ttk.Button(self.frame_steps, text=tr(" Build Imagery/DSF "), command=self.build_tile).grid(
             row=0, column=3, padx=5, pady=0, sticky=N+S+E+W)
-        ttk.Button(self.frame_steps, text="    All in one     ", command=self.build_all).grid(
+        ttk.Button(self.frame_steps, text=tr("    All in one     "), command=self.build_all).grid(
             row=0, column=4, padx=5, pady=0, sticky=N+S+E+W)
 
         # ── FRAME BARS (ligne 3 : barres de progression) ──────────────
@@ -221,19 +227,19 @@ class Ortho4XP_GUI(tk.Tk):
         # ── LIGNE 1 : Color Normalize | Enable | Strength | slider | % | Réf ──
         for i in range(6): self.frame_cnorm.columnconfigure(i, weight=1)
 
-        tk.Label(self.frame_cnorm, text="Color Normalize", bg="#3b5b49", fg="#a6e3a1",
+        tk.Label(self.frame_cnorm, text=tr("Color Normalize"), bg="#3b5b49", fg="#a6e3a1",
                  font=("TkFixedFont", fs(11), "bold"), padx=8).grid(
                  row=0, column=0, sticky=W+E, padx=4, pady=2)
 
         self.cnorm_enabled = tk.IntVar(value=1)
-        self.cnorm_checkbox = tk.Checkbutton(self.frame_cnorm, text="Enable",
+        self.cnorm_checkbox = tk.Checkbutton(self.frame_cnorm, text=tr("Enable"),
             fg="#e8f0ec", selectcolor="#2a4035",
             activeforeground="#ffffff", activebackground="#3b5b49",
             variable=self.cnorm_enabled, command=self.toggle_cnorm,
             font=("TkFixedFont", fs(11), "bold"), bg="#3b5b49")
         self.cnorm_checkbox.grid(row=0, column=1, padx=8, sticky=W)
 
-        tk.Label(self.frame_cnorm, text="Strength:", bg="#3b5b49", fg="#e8f0ec",
+        tk.Label(self.frame_cnorm, text=tr("Strength:"), bg="#3b5b49", fg="#e8f0ec",
                  font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=6, sticky=E)
 
         self.cnorm_strength = tk.IntVar(value=85)
@@ -257,7 +263,7 @@ class Ortho4XP_GUI(tk.Tk):
 
                # Bouton Color Check (réduit + désactive Enable avant d'ouvrir)
         ttk.Button(self.frame_cnorm,
-            text="RGB adjustments, sharpness, saturation",
+            text=tr("RGB adjustments, sharpness, saturation"),
             command=self.open_color_check,
             width=32).grid(row=1, column=3, padx=5, pady=(8,4))
 
@@ -513,7 +519,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
 
         tk.Toplevel.__init__(self)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
-        self.title("Preview / Custom zoomlevels")
+        self.title(tr("Preview / Custom zoomlevels"))
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -556,7 +562,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Preview params ",
+            text=tr("Preview params "),
             fg="#a6e3a1",
             bg="#2a4035",
             font="Helvetica 16 bold italic",
@@ -564,7 +570,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text="Source : ", bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Source : "), bg="#3b5b49", fg="#e8f0ec")
         self.map_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.map_choice,
@@ -576,7 +582,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text="Zoomlevel : ", bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Zoomlevel : "), bg="#3b5b49", fg="#e8f0ec")
         self.zl_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.zl_choice,
@@ -589,14 +595,14 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
 
         ttk.Button(
             self.frame_left,
-            text="Preview",
+            text=tr("Preview"),
             command=lambda: self.preview_tile(lat, lon),
         ).grid(row=row, padx=5, column=0, sticky=N + S + E + W)
         row += 1
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Zone params ",
+            text=tr("Zone params "),
             fg="#a6e3a1",
             bg="#2a4035",
             font="Helvetica 16 bold italic",
@@ -604,7 +610,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text="Source : ", bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Source : "), bg="#3b5b49", fg="#e8f0ec")
         self.zmap_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.zmap_choice,
@@ -645,7 +651,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Approx. Add. Size : ",
+            text=tr("Approx. Add. Size : "),
             bg="#3b5b49", fg="#e8f0ec").grid(row=row, column=0, padx=5, pady=10, sticky=W)
         tk.Entry(
             self.frame_left,
@@ -658,40 +664,39 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
 
         ttk.Button(
-            self.frame_left, text="  Save zone  ", command=self.save_zone_cmd
+            self.frame_left, text=tr("  Save zone  "), command=self.save_zone_cmd
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         ttk.Button(
-            self.frame_left, text="Delete ZL zone", command=self.delete_zone_cmd
+            self.frame_left, text=tr("Delete ZL zone"), command=self.delete_zone_cmd
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         ttk.Button(
             self.frame_left,
-            text="Make GeoTiffs",
+            text=tr("Make GeoTiffs"),
             command=self.build_geotiffs_ifc,
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         ttk.Button(
-            self.frame_left, text="Extract Mesh ", command=self.extract_mesh_ifc
+            self.frame_left, text=tr("Extract Mesh "), command=self.extract_mesh_ifc
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         tk.Label(
             self.frame_left,
-            text="Ctrl+B1 : add texture\nShift+B1: add zone point\n" + \
-                 "Ctrl+B2 : delete zone",
+            text=tr("Ctrl+B1 : add texture\\nShift+B1: add zone point\\n") + "\nCtrl+B2 : delete zone",
             bg="#3b5b49",
             justify=LEFT, fg="#e8f0ec").grid(row=row, column=0, padx=5, pady=20, sticky=N + S + E + W)
         row += 1
         ttk.Button(
-            self.frame_left, text="    Apply    ", command=self.save_zone_list
+            self.frame_left, text=tr("    Apply    "), command=self.save_zone_list
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         ttk.Button(
-            self.frame_left, text="    Reset    ", command=self.delAll
+            self.frame_left, text=tr("    Reset    "), command=self.delAll
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         ttk.Button(
-            self.frame_left, text="    Exit     ", command=self.destroy
+            self.frame_left, text=tr("    Exit     "), command=self.destroy
         ).grid(row=row, column=0, padx=5, pady=3, sticky=N + S + E + W)
         row += 1
         self.canvas = tk.Canvas(self.frame_right, bd=0, height=750, width=750)
@@ -1233,7 +1238,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
 
     def __init__(self, parent, lat, lon):
         tk.Toplevel.__init__(self)
-        self.title("Tiles collection and management")
+        self.title(tr("Tiles collection and management"))
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -1266,7 +1271,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Active tile",
+            text=tr("Active tile"),
             fg="#a6e3a1",
             bg="#2a4035",
             font="Helvetica 16 bold italic",
@@ -1285,7 +1290,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Erase cached data",
+            text=tr("Erase cached data"),
             fg="#a6e3a1",
             bg="#2a4035",
             font="Helvetica 16 bold italic",
@@ -1294,7 +1299,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         for item in self.list_del_ckbtn:
             tk.Checkbutton(
                 self.frame_left,
-                text=item,
+                text=tr(item),
                 anchor=W,
                 variable=self.v_[item],
                 bg="#3b5b49",
@@ -1306,14 +1311,14 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
             row += 1
         ttk.Button(
-            self.frame_left, text="  Delete    ", command=self.trash
+            self.frame_left, text=tr("  Delete    "), command=self.trash
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
         row += 1
         # Batch build
         tk.Label(
             self.frame_left,
             anchor=W,
-            text="Batch build tiles",
+            text=tr("Batch build tiles"),
             fg="#a6e3a1",
             bg="#2a4035",
             font="Helvetica 16 bold italic",
@@ -1322,7 +1327,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         for item in self.list_do_ckbtn:
             tk.Checkbutton(
                 self.frame_left,
-                text=item,
+                text=tr(item),
                 anchor=W,
                 variable=self.v_[item],
                 bg="#3b5b49",
@@ -1334,24 +1339,25 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
             row += 1
         ttk.Button(
-            self.frame_left, text="  Batch Build   ", command=self.batch_build
+            self.frame_left, text=tr("  Batch Build   "), command=self.batch_build
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
         row += 1
         # Refresh window
         ttk.Button(
-            self.frame_left, text="    Refresh     ", command=self.refresh
+            self.frame_left, text=tr("    Refresh     "), command=self.refresh
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
         row += 1
         # Exit
         ttk.Button(
-            self.frame_left, text="      Exit      ", command=self.exit
+            self.frame_left, text=tr("      Exit      "), command=self.exit
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
         row += 1
         tk.Label(
             self.frame_left,
-            text="Shortcuts :\n-----------------\nB2-press+hold=move map\n" + \
-                 "B1-double-click=select active\n" + \
-                 "Shift+B1=add to batch build\nCtrl+B1=link in Custom Scenery",
+            text=(tr("Shortcuts :") + "\n-----------------\n"
+                  + tr("B2-press+hold=move map") + "\n"
+                  + "B1-double-click=select active\n"
+                  + "Shift+B1=add to batch build\nCtrl+B1=link in Custom Scenery"),
             bg="#3b5b49", fg="#e8f0ec").grid(row=row, column=0, padx=0, pady=5, sticky=N + S + E + W)
         row += 1
 
@@ -1933,7 +1939,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             cy = ny0 * res // 8 + self.canvas_min_y // 2
             self.canvas.create_text(
                 cx, cy,
-                text="Carte Earth non disponible\n"
+                text=tr("Carte Earth non disponible\\n") +
                      "Copiez Utils/Earth/ depuis Ortho4XP 2.00\n\n"
                      "Double-clic = sélectionner tuile\n"
                      "Shift+clic = ajouter au batch",
@@ -2073,18 +2079,18 @@ class Ortho4XP_Simulator(tk.Toplevel):
         btn_fr = tk.Frame(self, bg=self.BG, padx=10, pady=8)
         btn_fr.pack(fill="x")
 
-        ttk.Button(btn_fr, text="↺  Recharger depuis cfg",
+        ttk.Button(btn_fr, text=tr("↺  Recharger depuis cfg"),
             command=self._load_values).pack(side="left", padx=4)
-        ttk.Button(btn_fr, text="✅  Write Tile cfg",
+        ttk.Button(btn_fr, text=tr("✅  Write Tile cfg"),
             command=self._write_tile).pack(side="left", padx=4)
-        ttk.Button(btn_fr, text="🌍  Write App cfg",
+        ttk.Button(btn_fr, text=tr("🌍  Write App cfg"),
             command=self._write_app).pack(side="left", padx=4)
 
         self._status = tk.Label(btn_fr, text="", bg=self.BG,
             fg=self.FG2, font=("TkFixedFont", fs(10)))
         self._status.pack(side="left", padx=16)
 
-        ttk.Button(btn_fr, text="✖  Fermer",
+        ttk.Button(btn_fr, text=tr("✖  Fermer"),
             command=self._on_close).pack(side="right", padx=4)
 
     # ── Helper : créer un onglet avec canvas en haut + curseurs en bas ─
@@ -2112,7 +2118,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
         # Explication dynamique — sous le canvas
         exp_fr = tk.Frame(frame, bg=self.BG)
         exp_fr.grid(row=2, column=0, sticky="ew", padx=8, pady=(0,2))
-        exp_lbl = tk.Label(exp_fr, text="Survolez un curseur.",
+        exp_lbl = tk.Label(exp_fr, text=tr("Survolez un curseur."),
             bg=self.BG, fg=self.FG3, font=("TkFixedFont", 9),
             wraplength=860, justify="left", anchor="w")
         exp_lbl.pack(fill="x", padx=4, pady=3)
@@ -2191,7 +2197,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
     # ONGLET 1 — MER & TRANSPARENCE
     # ══════════════════════════════════════════════════════════════════
     def _tab_mer(self, nb, fs):
-        cv, inner, exp_lbl = self._make_tab(nb, "💧 Mer & Eau")
+        cv, inner, exp_lbl = self._make_tab(nb, tr("💧 Mer & Eau"))
         self._canvases["mer"] = cv
 
         sliders = [
@@ -2218,13 +2224,13 @@ class Ortho4XP_Simulator(tk.Toplevel):
              "water_smoothing : lissage du maillage eau intérieure. "
              "0 = pas de lissage. 2 = recommandé. 5 = très lisse.", None),
         ]
-        self._add_group(inner, "Eau & Transparence", sliders, exp_lbl, fs)
+        self._add_group(inner, tr("Eau & Transparence"), sliders, exp_lbl, fs)
 
     # ══════════════════════════════════════════════════════════════════
     # ONGLET 2 — CÔTE & MASQUES
     # ══════════════════════════════════════════════════════════════════
     def _tab_cote(self, nb, fs):
-        cv, inner, exp_lbl = self._make_tab(nb, "🌊 Côte & Masques")
+        cv, inner, exp_lbl = self._make_tab(nb, tr("🌊 Côte & Masques"))
         self._canvases["cote"] = cv
 
         sliders = [
@@ -2273,14 +2279,14 @@ class Ortho4XP_Simulator(tk.Toplevel):
              "LAPLACE = lissage Laplacien.",
              ["none","LAPLACE"]),
         ]
-        self._add_group(inner, "Masques côtiers", sliders[:5], exp_lbl, fs)
-        self._add_group(inner, "Courbure côte", sliders[5:], exp_lbl, fs)
+        self._add_group(inner, tr("Masques côtiers"), sliders[:5], exp_lbl, fs)
+        self._add_group(inner, tr("Courbure côte"), sliders[5:], exp_lbl, fs)
 
     # ══════════════════════════════════════════════════════════════════
     # ONGLET 3 — TERRAIN & RELIEF
     # ══════════════════════════════════════════════════════════════════
     def _tab_terrain(self, nb, fs):
-        cv, inner, exp_lbl = self._make_tab(nb, "⛰ Terrain & Relief")
+        cv, inner, exp_lbl = self._make_tab(nb, tr("⛰ Terrain & Relief"))
         self._canvases["terrain"] = cv
 
         sliders = [
@@ -2318,14 +2324,14 @@ class Ortho4XP_Simulator(tk.Toplevel):
              "0.5 = simplification modérée. "
              "1.0 = très simplifié (rapide mais moins précis).", None),
         ]
-        self._add_group(inner, "Terrain & Ombrage", sliders[:3], exp_lbl, fs)
-        self._add_group(inner, "Altimétrie & Vecteurs", sliders[3:], exp_lbl, fs)
+        self._add_group(inner, tr("Terrain & Ombrage"), sliders[:3], exp_lbl, fs)
+        self._add_group(inner, tr("Altimétrie & Vecteurs"), sliders[3:], exp_lbl, fs)
 
     # ══════════════════════════════════════════════════════════════════
     # ONGLET 4 — MESH 3D
     # ══════════════════════════════════════════════════════════════════
     def _tab_mesh(self, nb, fs):
-        cv, inner, exp_lbl = self._make_tab(nb, "🗺 Mesh 3D")
+        cv, inner, exp_lbl = self._make_tab(nb, tr("🗺 Mesh 3D"))
         self._canvases["mesh"] = cv
 
         sliders = [
@@ -2353,14 +2359,14 @@ class Ortho4XP_Simulator(tk.Toplevel):
              "avant la triangulation. True = recommandé.",
              ["True","False"]),
         ]
-        self._add_group(inner, "Paramètres Mesh", sliders[:4], exp_lbl, fs)
-        self._add_group(inner, "Qualité & Nettoyage", sliders[4:], exp_lbl, fs)
+        self._add_group(inner, tr("Paramètres Mesh"), sliders[:4], exp_lbl, fs)
+        self._add_group(inner, tr("Qualité & Nettoyage"), sliders[4:], exp_lbl, fs)
 
     # ══════════════════════════════════════════════════════════════════
     # ONGLET 5 — IMAGERIE & AÉROPORTS
     # ══════════════════════════════════════════════════════════════════
     def _tab_imagerie(self, nb, fs):
-        cv, inner, exp_lbl = self._make_tab(nb, "📷 Imagerie & Aéroports")
+        cv, inner, exp_lbl = self._make_tab(nb, tr("📷 Imagerie & Aéroports"))
         self._canvases["imagerie"] = cv
 
         sliders = [
@@ -2395,9 +2401,9 @@ class Ortho4XP_Simulator(tk.Toplevel):
              "max_levelled_segs : nombre maximum de segments de route nivelés. "
              "200000 = recommandé.", None),
         ]
-        self._add_group(inner, "Imagerie", sliders[:4], exp_lbl, fs)
-        self._add_group(inner, "Aéroports", sliders[4:7], exp_lbl, fs)
-        self._add_group(inner, "Routes", sliders[7:], exp_lbl, fs)
+        self._add_group(inner, tr("Imagerie"), sliders[:4], exp_lbl, fs)
+        self._add_group(inner, tr("Aéroports"), sliders[4:7], exp_lbl, fs)
+        self._add_group(inner, tr("Routes"), sliders[7:], exp_lbl, fs)
 
     # ── Forcer redraw de tous les canvas ────────────────────────────
     def _redraw_all(self):
@@ -2867,7 +2873,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
             except Exception:
                 pass
         self._status.config(
-            text="✓ Valeurs chargées depuis le cfg.", fg=self.FG2)
+            text=tr("✓ Valeurs chargées depuis le cfg."), fg=self.FG2)
 
     # ── Écriture cfg tuile ─────────────────────────────────────────
     def _write_tile(self):
@@ -2875,7 +2881,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
             self._apply_to_tile()
             self._tile.write_to_config()
             self._status.config(
-                text="✅ Sauvegardé dans cfg tuile.", fg=self.FG2)
+                text=tr("✅ Sauvegardé dans cfg tuile."), fg=self.FG2)
         except Exception as e:
             self._status.config(text=f"❌ {e}", fg="#ff6b6b")
 
@@ -2889,7 +2895,7 @@ class Ortho4XP_Simulator(tk.Toplevel):
                 FNAMES.Ortho4XP_dir, "Ortho4XP.cfg")
             self._tile.write_to_config(cfg_path)
             self._status.config(
-                text="✅ Sauvegardé dans cfg global.", fg=self.FG2)
+                text=tr("✅ Sauvegardé dans cfg global."), fg=self.FG2)
         except Exception as e:
             self._status.config(text=f"❌ {e}", fg="#ff6b6b")
 

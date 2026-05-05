@@ -29,6 +29,7 @@ import O4_Mask_Utils as MASK
 import O4_Tile_Utils as TILE
 import O4_GUI_Utils as GUI
 import O4_Config_Utils as CFG   # Doit rester en dernier
+import O4_Lang                   # Moteur de traduction (EN/FR)
 
 def main():
     print("Ortho4XP V2.0 - Démarrage...")
@@ -70,6 +71,10 @@ def main():
     if len(sys.argv) == 1:
         try:
             print("Lancement de l'interface graphique...")
+            # Langue AVANT la création de la fenêtre principale :
+            # - si language= absent de Ortho4XP.cfg → dialogue de choix
+            # - sinon → charge silencieusement la langue sauvegardée
+            O4_Lang.init()
             app = GUI.Ortho4XP_GUI()
             app.mainloop()
             print("Ortho4XP fermé. Bon vol !")

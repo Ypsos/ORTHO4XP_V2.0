@@ -1,4 +1,3 @@
-# Version validée 30 avril 2026
 from O4_Parallel_Utils import parallel_execute
 import O4_Mask_Utils as MASK
 import O4_OSM_Utils as OSM
@@ -154,7 +153,7 @@ user_agent_generic = (
 # User-Agent conforme politique OSM (identifie l'application)
 user_agent_osm = (
     "Ortho4XP/2.0 (https://github.com/oscar-broman/Ortho4XP; "
-    "contact: ortho4xp@ypsos.com) Python/3.12"
+    "contact: ortho4xp@github.com) Python/3.12"
 )
 request_headers_generic = {
     "User-Agent": user_agent_generic,

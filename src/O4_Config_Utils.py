@@ -12,6 +12,7 @@ import O4_Vector_Map as VMAP
 import O4_Imagery_Utils as IMG
 import O4_Tile_Utils as TILE
 import O4_Overlay_Utils as OVL
+from O4_Lang import tr
 
 
 cfg_vars = {
@@ -669,10 +670,10 @@ class Ortho4XP_Config(tk.Toplevel):
         col = 0
         next_row = 0
         for (title, sub_list) in (
-            ("Vector data", list_vector_vars),
-            ("Mesh", list_mesh_vars),
-            ("Masks", list_mask_vars),
-            ("DSF/Imagery", list_dsf_vars),
+            (tr("Vector data"), list_vector_vars),
+            (tr("Mesh"), list_mesh_vars),
+            (tr("Masks"), list_mask_vars),
+            (tr("DSF/Imagery"), list_dsf_vars),
         ):
             tk.Label(
                 self.frame_cfg,
@@ -791,7 +792,7 @@ class Ortho4XP_Config(tk.Toplevel):
         row += 1
         tk.Label(
             self.frame_cfg,
-            text="Application ",
+            text=tr("Application "),
             bg="#3b5b49",
             fg="#e8f0ec",
             anchor=W,
@@ -880,7 +881,7 @@ class Ortho4XP_Config(tk.Toplevel):
 
         self.button1 = ttk.Button(
             self.frame_lastbtn,
-            text="Load Tile Cfg ",
+            text=tr("Load Tile Cfg "),
             command=self.load_tile_cfg,
         )
         self.button1.grid(
@@ -888,7 +889,7 @@ class Ortho4XP_Config(tk.Toplevel):
         )
         self.button2 = ttk.Button(
             self.frame_lastbtn,
-            text="Write Tile Cfg",
+            text=tr("Write Tile Cfg"),
             command=self.write_tile_cfg,
         )
         self.button2.grid(
@@ -896,7 +897,7 @@ class Ortho4XP_Config(tk.Toplevel):
         )
         self.button3 = ttk.Button(
             self.frame_lastbtn,
-            text="Reload App Cfg",
+            text=tr("Reload App Cfg"),
             command=self.load_global_cfg,
         )
         self.button3.grid(
@@ -904,7 +905,7 @@ class Ortho4XP_Config(tk.Toplevel):
         )
         self.button4 = ttk.Button(
             self.frame_lastbtn,
-            text="Write App Cfg ",
+            text=tr("Write App Cfg "),
             command=self.write_global_cfg,
         )
         self.button4.grid(
@@ -912,21 +913,21 @@ class Ortho4XP_Config(tk.Toplevel):
         )
         self.button5 = ttk.Button(
             self.frame_lastbtn,
-            text="    Apply     ",
+            text=tr("    Apply     "),
             command=self.apply_changes,
         )
         self.button5.grid(
             row=0, column=4, padx=5, pady=self.pady, sticky=N + S + E + W
         )
         self.button6 = ttk.Button(
-            self.frame_lastbtn, text="     Exit     ", command=self.destroy
+            self.frame_lastbtn, text=tr("     Exit     "), command=self.destroy
         )
         self.button6.grid(
             row=0, column=5, padx=5, pady=self.pady, sticky=N + S + E + W
         )
         self.button7 = ttk.Button(
             self.frame_lastbtn,
-            text="🎚 Visualisation réglages",
+            text=tr("🎚 Visualisation réglages"),
             command=self._open_simulator,
         )
         self.button7.grid(
@@ -1230,6 +1231,6 @@ class Ortho4XP_Config(tk.Toplevel):
             self.popupwindow, text=input_text, wraplength=600, anchor=W
         ).pack(side="top", fill="x", padx=5, pady=0)
         ttk.Button(
-            self.popupwindow, text="Ok", command=self.popupwindow.destroy
+            self.popupwindow, text=tr("Ok"), command=self.popupwindow.destroy
         ).pack(pady=5)
         return
