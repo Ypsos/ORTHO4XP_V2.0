@@ -19,6 +19,42 @@ SHADOW_COLOR  = "#2a4235"
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).resolve()
 SYSTEM   = platform.system()
 
+# ── Vérification nom de dossier GitHub ──────────────────────────────────────
+# GitHub crée automatiquement un double nom : ORTHO4XP-V2-ORTHO4XP_V2
+# Le lanceur fonctionne quand même, mais on avertit l'utilisateur pour éviter
+# toute confusion future (chemins longs, scripts externes, etc.)
+def _check_folder_name():
+    folder_name = BASE_DIR.name
+    # Détection du double nom GitHub (contient un tiret suivi du même nom)
+    if "-" in folder_name and folder_name.count("ORTHO4XP") >= 2:
+        correct_name = "ORTHO4XP_V2"
+        parent = BASE_DIR.parent
+        correct_path = parent / correct_name
+        # Afficher alerte tkinter minimale avant ouverture du lanceur
+        import tkinter as _tk
+        import tkinter.messagebox as _mb
+        _root = _tk.Tk()
+        _root.withdraw()
+        _mb.showwarning(
+            title="⚠️  Nom de dossier incorrect",
+            message=(
+                f"Le dossier s'appelle :\n\n"
+                f"  {folder_name}\n\n"
+                f"GitHub a ajouté un double nom automatiquement.\n\n"
+                f"➡  Renommez-le en :\n\n"
+                f"  {correct_name}\n\n"
+                f"Chemin correct :\n"
+                f"  {correct_path}\n\n"
+                f"Le lanceur va s'arrêter.\n"
+                f"Relancez après le renommage."
+            )
+        )
+        _root.destroy()
+        sys.exit(0)
+
+_check_folder_name()
+# ────────────────────────────────────────────────────────────────────────────
+
 ORTHO_PY    = BASE_DIR / "Ortho4XP.py"
 CFG_FILE    = BASE_DIR / "Ortho4XP.cfg"
 CONF_FILE   = BASE_DIR / "Ortho4XP.conf"
