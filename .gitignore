@@ -49,6 +49,7 @@ Providers/EUR.comb
 Providers/ZonePhoto.comb
 Providers/__pycache__/
 Providers/Global/Mapbox.lay
+
 # ── Fichiers de configuration personnels ────────────────────
 Ortho4XP.cfg
 *.cfg
@@ -67,13 +68,21 @@ Ortho4XP.cfg
 *.jpg
 *.JPG
 *.jpeg
+
+# ── PNG : ignorer partout SAUF Utils/ et BanniereGithub ─────
+# RÈGLE OBLIGATOIRE : exceptions APRÈS la règle *.png
+# ET le dossier parent (Utils/) doit être explicitement débloqué
 *.png
 *.PNG
 *.tif
 *.tiff
 *.geotiff
+
+# Exceptions PNG — ordre impératif : dossier d'abord, fichiers ensuite
+!Utils/
+!Utils/*.png
+!Utils/**/*.png
 !BanniereGithub.png
-!Utils/water_transition.png
 
 # ── Fichiers mesh et DSF (données de tuiles) ────────────────
 *.mesh
@@ -132,12 +141,9 @@ _ortho_launch.sh
 ORTHO4XP_V2_Lanceur.app/
 Lanceur ORTHO4XP.app/
 Lanceur_Installation_Prerequis_MAC.zip
+
 Filters/
-Filters copie/
+
 #-------
 *copie*
 Patches/
-
-
-#-----lanceur prerrequis mac
-Lanceur_Installation_Prerequis_MAC.zip
