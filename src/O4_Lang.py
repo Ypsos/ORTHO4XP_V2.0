@@ -193,14 +193,16 @@ def show_language_dialog(parent=None, on_change=None):
                  bg="#1e2d1e", fg="#a6e3a1",
                  font=("TkFixedFont", 11),
                  justify="center", pady=10).pack(expand=True)
+        btn_style = ttk.Style(msg_win)
+        btn_style.configure("Msg.TButton",
+                            font=("TkFixedFont", 12, "bold"),
+                            foreground="#e8f0ec",
+                            background="#3b5b49",
+                            padding=12)
         btn_txt = "  ✅  OK  — Click here to close  " if _current_lang == "EN" else "  ✅  OK  — Cliquez ici pour fermer  "
-        tk.Button(msg_win, text=btn_txt,
-                  command=msg_win.destroy,
-                  bg="#3b5b49", fg="#e8f0ec",
-                  font=("TkFixedFont", 12, "bold"),
-                  relief="raised", bd=3,
-                  height=2,
-                  padx=16, pady=10).pack(pady=(0, 16), fill="x", padx=20)
+        ttk.Button(msg_win, text=btn_txt,
+                   style="Msg.TButton",
+                   command=msg_win.destroy).pack(pady=(0, 16), fill="x", padx=20)
         if callable(on_change):
             on_change()
 
