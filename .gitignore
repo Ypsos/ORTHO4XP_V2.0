@@ -69,6 +69,12 @@ Ortho4XP.cfg
 *.JPG
 *.jpeg
 
+# Exceptions JPG pour Utils/
+!Utils/*.jpg
+!Utils/*.JPG
+!Utils/**/*.jpg
+!Utils/**/*.JPG
+
 # ── PNG : ignorer partout SAUF Utils/ et BanniereGithub ─────
 # RÈGLE OBLIGATOIRE : exceptions APRÈS la règle *.png
 # ET le dossier parent (Utils/) doit être explicitement débloqué
