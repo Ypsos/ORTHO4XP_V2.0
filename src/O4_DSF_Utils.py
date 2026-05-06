@@ -304,7 +304,8 @@ def create_terrain_file(
         f.write("BASE_TEX_NOWRAP ../textures/" + texture_file_name + "\n")
 
         if tri_type in (1, 2) and (not is_overlay):  # XP12 water
-            pass  # mesh gère terre/mer — WATER_COLOR_MASK retiré (rectangle visible)
+            #pass
+            f.write("WATER_COLOR_MASK\n")
         elif (tri_type == 1) or (
             (tri_type == 2) and (is_overlay == "ratio_water")
         ):  # constant transparency level
