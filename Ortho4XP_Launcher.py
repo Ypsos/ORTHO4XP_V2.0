@@ -23,7 +23,13 @@ SYSTEM   = platform.system()
 sys.path.insert(0, str(BASE_DIR / "src"))
 try:
     import O4_Lang
-    O4_Lang.init()   # charge langue depuis Ortho4XP.cfg, silencieux
+    # Chargement silencieux uniquement — pas de dialogue dans le Launcher
+    # Le dialogue de 1er lancement est géré par INSTALL_PREREQUIS.py
+    _saved = O4_Lang._read_lang_from_cfg()
+    if _saved:
+        O4_Lang._load_lang(_saved)
+    else:
+        O4_Lang._load_lang("EN")
     from O4_Lang import tr
 except Exception:
     def tr(k): return k   # fallback si O4_Lang absent

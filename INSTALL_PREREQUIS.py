@@ -83,8 +83,23 @@ def find_python312():
             "/usr/local/opt/python@3.12/bin/python3.12",
         ]
     elif SYSTEM == "Windows":
-        # Cherche dans les chemins PATH standard
-        for name in ["python3.12", "python"]:
+        # 1. Chercher via le Python Launcher Windows (py -3.12) — méthode la plus fiable
+        try:
+            py_launcher = shutil.which("py")
+            if py_launcher:
+                result = subprocess.run([py_launcher, "-3.12", "--version"],
+                                        capture_output=True, text=True, timeout=5)
+                if "3.12" in result.stdout + result.stderr:
+                    # Retourner le chemin réel de python3.12 via le launcher
+                    r2 = subprocess.run([py_launcher, "-3.12", "-c",
+                                         "import sys; print(sys.executable)"],
+                                        capture_output=True, text=True, timeout=5)
+                    if r2.returncode == 0:
+                        return r2.stdout.strip()
+        except Exception:
+            pass
+        # 2. Cherche python3.12 dans le PATH
+        for name in ["python3.12"]:
             path = shutil.which(name)
             if path:
                 try:
@@ -92,6 +107,23 @@ def find_python312():
                                             capture_output=True, text=True, timeout=5)
                     if "3.12" in result.stdout + result.stderr:
                         return path
+                except Exception:
+                    pass
+        # 3. Vérifier si la version par défaut est compatible (3.10 ou 3.11 acceptés, 3.13+ refusés)
+        for name in ["python3", "python"]:
+            path = shutil.which(name)
+            if path:
+                try:
+                    result = subprocess.run([path, "--version"],
+                                            capture_output=True, text=True, timeout=5)
+                    ver_str = result.stdout + result.stderr
+                    import re
+                    m = re.search(r"Python 3\.(\d+)", ver_str)
+                    if m:
+                        minor = int(m.group(1))
+                        if minor >= 13:
+                            # Python 3.13+ : modules incompatibles — bloquer
+                            return "INCOMPATIBLE_3." + str(minor)
                 except Exception:
                     pass
         candidates = [
@@ -291,6 +323,7 @@ class Installer:
             return
         self._set_progress(60)
 
+        self._ensure_pip_in_venv()
         self._install_requirements()
         self._set_progress(80)
 
@@ -303,6 +336,18 @@ class Installer:
     def _install_windows(self):
         self.log("── 🪟 Windows détecté ────────────────────────")
         self.python312 = find_python312()
+
+        # Bloquer si Python 3.13+ détecté comme seule version (incompatible)
+        if self.python312 and self.python312.startswith("INCOMPATIBLE_3."):
+            ver = self.python312.replace("INCOMPATIBLE_", "")
+            self.log(f"❌ Python {ver} détecté — INCOMPATIBLE avec Ortho4XP V2.0 !", )
+            self.log("⚠️  Les modules requis (numpy, Pillow, rasterio...) ne supportent pas encore Python 3.13+.")
+            self.log("✅ Solution : installez Python 3.12 depuis https://python.org/downloads/release/python-3120/")
+            self.log("   Cochez impérativement 'Add Python to PATH' lors de l'installation.")
+            webbrowser.open("https://www.python.org/downloads/release/python-3120/")
+            self._finish(False, f"❌ Python {ver} incompatible.\nInstallez Python 3.12 puis relancez.")
+            return
+
         if self.python312:
             self.log(f"✅ Python 3.12 trouvé : {self.python312}")
             self._set_progress(25)
@@ -321,6 +366,7 @@ class Installer:
         if not self._venv_ok():
             return
         self._set_progress(60)
+        self._ensure_pip_in_venv()
         self._install_requirements()
         self._set_progress(85)
         self._launch_launcher()
@@ -332,31 +378,72 @@ class Installer:
         if not self.python312:
             self.log("⚠️  Python 3.12 absent. Installation via gestionnaire de paquets...")
             if shutil.which("apt-get"):
-                run_cmd(["sudo", "apt-get", "update", "-y"], self.log)
-                run_cmd(["sudo", "apt-get", "install", "-y", "python3.12", "python3.12-venv", "python3-pip", "python3-tk", "p7zip-full"], self.log)
+                # Tenter apt-get — peut échouer si sudo demande un mot de passe
+                rc_update = run_cmd(["sudo", "-n", "apt-get", "update", "-y"], self.log)
+                if rc_update != 0:
+                    self.log("⚠️  sudo nécessite un mot de passe — tentative sans mise à jour...")
+                run_cmd(["sudo", "-n", "apt-get", "install", "-y",
+                         "python3.12", "python3.12-venv", "python3.12-dev",
+                         "python3-pip", "python3-tk", "p7zip-full"], self.log)
             elif shutil.which("dnf"):
                 run_cmd(["sudo", "dnf", "install", "-y", "python3.12", "python3-tkinter"], self.log)
             elif shutil.which("pacman"):
                 run_cmd(["sudo", "pacman", "-S", "--noconfirm", "python", "tk"], self.log)
             self.python312 = find_python312()
             if not self.python312:
-                self._finish(False, "❌ Python 3.12 introuvable après installation.\nInstallez-le manuellement puis relancez.")
+                self.log("❌ Python 3.12 introuvable après tentative automatique.")
+                self.log("   Installez-le manuellement avec ces commandes dans un Terminal :")
+                self.log("   sudo apt-get update")
+                self.log("   sudo apt-get install python3.12 python3.12-venv python3-pip python3-tk")
+                self._finish(False, "❌ Python 3.12 requis. Installez-le manuellement puis relancez.")
                 return
         self._create_venv()
         if not self._venv_ok():
             return
+        # Garantir pip même si le système n'avait pas python3-pip
+        self._ensure_pip_in_venv()
         self._install_requirements()
         self._set_progress(85)
         self._launch_launcher()
 
     def _create_venv(self):
         if VENV_DIR.exists():
-            self.log(f"♻️  Venv existant trouvé : {VENV_DIR}")
-            return
+            # Vérifier que le venv n'est pas cassé (python absent = venv partiel)
+            if VENV_PY.exists():
+                self.log(f"♻️  Venv existant trouvé et valide : {VENV_DIR}")
+                return
+            else:
+                self.log(f"⚠️  Venv incomplet détecté — suppression et recréation...")
+                import shutil as _shutil
+                try:
+                    _shutil.rmtree(str(VENV_DIR))
+                except Exception as e:
+                    self.log(f"❌ Impossible de supprimer le venv cassé : {e}")
         self.log(f"🔧 Création du venv Python 3.12...")
-        rc = run_cmd([self.python312, "-m", "venv", str(VENV_DIR)], self.log)
+        rc = run_cmd([self.python312, "-m", "venv", "--copies", str(VENV_DIR)], self.log)
         if rc != 0:
             self._finish(False, "❌ Échec création du venv.")
+
+    def _ensure_pip_in_venv(self):
+        """Garantit que pip est présent dans le venv — indépendant du pip système."""
+        if SYSTEM == "Windows":
+            pip_path = VENV_DIR / "Scripts" / "pip.exe"
+        else:
+            pip_path = VENV_DIR / "bin" / "pip"
+        if pip_path.exists():
+            return  # pip déjà là
+        self.log("🔧 pip absent du venv — bootstrap via ensurepip...")
+        rc = run_cmd([str(VENV_PY), "-m", "ensurepip", "--upgrade"], self.log)
+        if rc != 0:
+            self.log("⚠️  ensurepip échoué — tentative get-pip.py...")
+            try:
+                import urllib.request
+                get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+                get_pip_path = str(VENV_DIR / "get-pip.py")
+                urllib.request.urlretrieve(get_pip_url, get_pip_path)
+                run_cmd([str(VENV_PY), get_pip_path], self.log)
+            except Exception as e:
+                self.log(f"⚠️  get-pip.py échoué : {e}")
 
     def _venv_ok(self):
         if not VENV_PY.exists():

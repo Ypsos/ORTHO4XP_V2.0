@@ -71,10 +71,13 @@ def main():
     if len(sys.argv) == 1:
         try:
             print("Lancement de l'interface graphique...")
-            # Langue AVANT la création de la fenêtre principale :
-            # - si language= absent de Ortho4XP.cfg → dialogue de choix
-            # - sinon → charge silencieusement la langue sauvegardée
-            O4_Lang.init()
+            # Chargement silencieux de la langue depuis Ortho4XP.cfg
+            # Le dialogue de choix est géré par INSTALL_PREREQUIS et le bouton 🌐
+            _saved = O4_Lang._read_lang_from_cfg()
+            if _saved:
+                O4_Lang._load_lang(_saved)
+            else:
+                O4_Lang._load_lang("EN")
             app = GUI.Ortho4XP_GUI()
             app.mainloop()
             print("Ortho4XP fermé. Bon vol !")

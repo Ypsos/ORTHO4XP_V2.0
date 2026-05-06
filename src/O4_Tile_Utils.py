@@ -170,8 +170,23 @@ def build_tile(tile):
                 UI.vprint(1, " *DDS conversion of textures completed.")
     UI.vprint(1, " *Activating DSF file.")
     # Supprimer les PNG masques côtiers après DSF et DDS terminés
+    # SAUF ceux référencés par un .ter (BORDER_TEX) — XP12 en a besoin au runtime
+    terrain_dir = os.path.join(tile.build_dir, "terrain")
+    referenced_png = set()
+    if os.path.isdir(terrain_dir):
+        for _ter in os.listdir(terrain_dir):
+            if not _ter.endswith(".ter"):
+                continue
+            try:
+                with open(os.path.join(terrain_dir, _ter)) as _tf:
+                    for _line in _tf:
+                        if "BORDER_TEX" in _line:
+                            _ref = _line.strip().split()[-1]
+                            referenced_png.add(os.path.basename(_ref))
+            except:
+                pass
     for _f in os.listdir(os.path.join(tile.build_dir, "textures")):
-        if _f.endswith(".png") and _f != "water_transition.png":
+        if _f.endswith(".png") and _f != "water_transition.png" and _f not in referenced_png:
             try:
                 os.remove(os.path.join(tile.build_dir, "textures", _f))
             except:
