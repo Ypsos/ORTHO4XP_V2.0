@@ -194,7 +194,9 @@ def show_language_dialog(parent=None, on_change=None):
                  bg="#1e2d1e", fg="#a6e3a1",
                  font=("TkFixedFont", 11),
                  justify="center", pady=10).pack(expand=True)
-        ttk.Button(msg_win, text="OK", command=msg_win.destroy).pack(pady=(0, 12))
+        btn_txt = "  ✅  OK  — Click here to close  " if _current_lang == "EN" else "  ✅  OK  — Cliquez ici pour fermer  "
+        ttk.Button(msg_win, text=btn_txt,
+                   command=msg_win.destroy).pack(pady=(0, 16), ipadx=10, ipady=8)
         if callable(on_change):
             on_change()
 
@@ -278,10 +280,8 @@ def init(parent=None, on_change=None):
 _saved = _read_lang_from_cfg()
 if _saved:
     _load_lang(_saved)
-    print("[O4_Lang] Auto-init: langue={} depuis {}".format(_saved, _cfg_path))
 else:
     _load_lang("EN")
-    print("[O4_Lang] Auto-init: cfg non trouve ou langue absente -> EN ({})".format(_cfg_path))
 
 
 # ──────────────────────────────────────────────────────────────────
