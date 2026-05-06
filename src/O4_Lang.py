@@ -178,13 +178,12 @@ def show_language_dialog(parent=None, on_change=None):
         msg_win.title("Ortho4XP")
         msg_win.configure(bg="#1e2d1e")
         msg_win.resizable(False, False)
-        msg_win.geometry("420x120")
         try:
-            px2 = parent.winfo_rootx() + (parent.winfo_width()  - 420) // 2
-            py2 = parent.winfo_rooty() + (parent.winfo_height() - 120) // 2
-            msg_win.geometry("420x120+{}+{}".format(px2, py2))
+            px2 = parent.winfo_rootx() + (parent.winfo_width()  - 480) // 2
+            py2 = parent.winfo_rooty() + (parent.winfo_height() - 200) // 2
+            msg_win.geometry("480x200+{}+{}".format(px2, py2))
         except Exception:
-            pass
+            msg_win.geometry("480x200")
         lbl_text = (
             "Language saved / Langue sauvegardée.\n\n"
             "Relancez Ortho4XP pour appliquer.\n"
@@ -195,8 +194,13 @@ def show_language_dialog(parent=None, on_change=None):
                  font=("TkFixedFont", 11),
                  justify="center", pady=10).pack(expand=True)
         btn_txt = "  ✅  OK  — Click here to close  " if _current_lang == "EN" else "  ✅  OK  — Cliquez ici pour fermer  "
-        ttk.Button(msg_win, text=btn_txt,
-                   command=msg_win.destroy).pack(pady=(0, 16), ipadx=10, ipady=8)
+        tk.Button(msg_win, text=btn_txt,
+                  command=msg_win.destroy,
+                  bg="#2e6b3e", fg="white",
+                  font=("TkFixedFont", 12, "bold"),
+                  relief="raised", bd=3,
+                  height=2,
+                  padx=16, pady=10).pack(pady=(0, 16), fill="x", padx=20)
         if callable(on_change):
             on_change()
 
