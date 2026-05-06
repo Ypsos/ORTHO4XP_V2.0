@@ -304,7 +304,17 @@ def create_terrain_file(
         f.write("BASE_TEX_NOWRAP ../textures/" + texture_file_name + "\n")
 
         if tri_type in (1, 2) and (not is_overlay):  # XP12 water
-            pass  # mesh gère terre/mer — WATER_COLOR_MASK retiré (rectangle visible)
+            f.write("WATER_COLOR_MASK\n")
+            # BORDER_TEX nécessaire pour limiter WATER_COLOR_MASK à la zone mer
+            # Sans lui, XP12 applique le filtre eau sur toute la tuile → rectangles
+            f.write("BORDER_TEX ../textures/water_transition.png\n")
+            if not os.path.exists(
+                os.path.join(tile.build_dir, "textures", "water_transition.png")
+            ):
+                shutil.copy(
+                    os.path.join(FNAMES.Utils_dir, "water_transition.png"),
+                    os.path.join(tile.build_dir, "textures"),
+                )
         elif (tri_type == 1) or (
             (tri_type == 2) and (is_overlay == "ratio_water")
         ):  # constant transparency level
