@@ -196,7 +196,7 @@ def show_language_dialog(parent=None, on_change=None):
         btn_txt = "  ✅  OK  — Click here to close  " if _current_lang == "EN" else "  ✅  OK  — Cliquez ici pour fermer  "
         tk.Button(msg_win, text=btn_txt,
                   command=msg_win.destroy,
-                  bg="#2e6b3e", fg="white",
+                  bg="#3b5b49", fg="#e8f0ec",
                   font=("TkFixedFont", 12, "bold"),
                   relief="raised", bd=3,
                   height=2,
