@@ -349,10 +349,11 @@ def generate_coastal_mask_from_mesh(tile, til_x, til_y, zoomlevel, dico_sea):
             return None
 
         from PIL import ImageFilter as _IF
-        pxscal = 4.0 * (2 ** (15 - zoomlevel))
-        _mw = getattr(tile, 'masks_width', 8000)
+        _mask_zl = int(getattr(tile, 'mask_zl', 15))
+        pxscal = GEO.webmercator_pixel_size(tile.lat + 0.5, zoomlevel)
+        _mw = getattr(tile, 'masks_width', 100)
         masks_width = float(_mw[0] if isinstance(_mw, (list, tuple)) else _mw)
-        blur_r = max(2, int(masks_width / pxscal / 8))
+        blur_r = max(2, int(masks_width / pxscal))
         result = np.array(_PIL.fromarray(arr.astype(np.uint8), 'L').filter(_IF.GaussianBlur(blur_r)), dtype=np.uint8)
         final = result[PAD:PAD+SIZE, PAD:PAD+SIZE]
 

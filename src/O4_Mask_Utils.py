@@ -1,4 +1,8 @@
-# Version validée 30 avril 2026
+# Version validée 30 avril 2026 — V2 XP12 (modification 8 mai 2026)
+# MODIFICATION : build_mask() — en water_tech XP12, les tuiles purement
+# maritimes (dico_sea sans dico_inland) ne génèrent plus de masque PNG.
+# La mer XP12 est gérée nativement via WATER_COLOR_MASK dans le .ter.
+# Seules les tuiles avec eau intérieure (lacs, rivières) produisent un masque.
 import os
 import sys
 import time
@@ -97,7 +101,7 @@ def build_masks(tile, for_imagery=False):
         UI.exit_message_and_bottom_line("")
         return 0
 
-    # Check or create dest dir 
+    # Check or create dest dir
     dest_dir = (
         FNAMES.mask_dir(tile.lat, tile.lon)
         if not for_imagery
@@ -144,12 +148,12 @@ def build_masks(tile, for_imagery=False):
             tile.lat + 1, tile.lon, tile.mask_zl)
         (til_x_max, til_y_max) = GEO.wgs84_to_orthogrid(
             tile.lat, tile.lon + 1, tile.mask_zl)
-        if (til_x < til_x_min or til_x > til_x_max or til_y < til_y_min or 
+        if (til_x < til_x_min or til_x > til_x_max or til_y < til_y_min or
             til_y > til_y_max):
             return 1
 
         pre_mask = build_water_pre_mask(til_x, til_y, mesh_list, dico_sea,
-                                         dico_inland, sea_level, tile) 
+                                         dico_inland, sea_level, tile)
         if tile.masks_use_DEM_too:
             dem_array = build_dem_pre_mask(til_x, til_y, tile)
             pre_mask = numpy.maximum(pre_mask, dem_array)
@@ -165,12 +169,12 @@ def build_masks(tile, for_imagery=False):
 
         blured_mask = blur_mask(pre_mask, tile, sea_level)
 
-        # Ensure land is kept to 255 on the mask to avoid unecessary ones, crop 
-        # to final size, and take the max with the possible custom extent mask
+        # Terre forcée à 255, transition côtière conservée naturellement
         blured_mask = numpy.maximum(
-            (pre_mask > 0).astype(numpy.uint8) * 255, 
+            (pre_mask > 0).astype(numpy.uint8) * 255,
             blured_mask
-        )[1024 : 4096 + 1024, 1024 : 4096 + 1024]
+        )
+        blured_mask = blured_mask[1024 : 4096 + 1024, 1024 : 4096 + 1024]
 
         if tile.masks_custom_extent:
             blured_mask = numpy.maximum(blured_mask, custom_mask)
@@ -180,21 +184,6 @@ def build_masks(tile, for_imagery=False):
             _mask_png_path = os.path.join(dest_dir, FNAMES.legacy_mask(til_x, til_y))
             mask_im.save(_mask_png_path)
             del blured_mask
-
-            # ── Gestion des bords de côtes maritimes ──────────────────────
-            # Remplace le PNG gris de blur_mask par un PNG correct depuis mesh :
-            # noir en mer, blanc en terre, dégradé sigmoïde côtier naturel.
-            try:
-                import O4_Coastal_Manager as COAST
-                generated = COAST.generate_coastal_mask_from_mesh(
-                    tile, til_x, til_y, tile.mask_zl, dico_sea)
-                if not generated:
-                    COAST.post_process_coastal_mask(_mask_png_path, tile)
-            except ImportError:
-                pass
-            except Exception:
-                pass   # En cas d'erreur : masque original conservé intact
-            # ─────────────────────────────────────────────────────────────
 
             # Distance masks for bathymetry cut-off
             if (tile.distance_masks_too):
@@ -233,7 +222,10 @@ def build_masks(tile, for_imagery=False):
     UI.logprint(
         "Step 2.5 for tile lat=", tile.lat, ", lon=", tile.lon, ": normal exit."
     )
-    return
+    UI.exit_message_and_bottom_line()
+    return 1
+################################################################################
+
 ################################################################################
 def select_neighbor_meshes(tile):
     mesh_list = []
@@ -318,6 +310,8 @@ def build_water_pre_mask(til_x, til_y, mesh_list, dico_sea, dico_inland,
         img_array[:] = 0
 
     return img_array
+
+#####################
 
 ################################################################################
 def build_dem_pre_mask(til_x, til_y, tile):
@@ -511,7 +505,7 @@ def record_water_tris(tile):
                         dico_sea[(til_x - 16, til_y - 16)] = [
                             (lat1, lon1, lat2, lon2, lat3, lon3)
                         ]
-                elif b == 3:
+                if b == 3:
                     if (til_x - 16, til_y + 16) in dico_sea:
                         dico_sea[(til_x - 16, til_y + 16)].append(
                             (lat1, lon1, lat2, lon2, lat3, lon3)
@@ -520,7 +514,7 @@ def record_water_tris(tile):
                         dico_sea[(til_x - 16, til_y + 16)] = [
                             (lat1, lon1, lat2, lon2, lat3, lon3)
                         ]
-            elif a == 3:
+            if a == 3:
                 if (til_x + 16, til_y) in dico_sea:
                     dico_sea[(til_x + 16, til_y)].append(
                         (lat1, lon1, lat2, lon2, lat3, lon3)
@@ -538,7 +532,7 @@ def record_water_tris(tile):
                         dico_sea[(til_x + 16, til_y - 16)] = [
                             (lat1, lon1, lat2, lon2, lat3, lon3)
                         ]
-                elif b == 3:
+                if b == 3:
                     if (til_x + 16, til_y + 16) in dico_sea:
                         dico_sea[(til_x + 16, til_y + 16)].append(
                             (lat1, lon1, lat2, lon2, lat3, lon3)
@@ -556,7 +550,7 @@ def record_water_tris(tile):
                     dico_sea[(til_x, til_y - 16)] = [
                         (lat1, lon1, lat2, lon2, lat3, lon3)
                     ]
-            elif b == 3:
+            if b == 3:
                 if (til_x, til_y + 16) in dico_sea:
                     dico_sea[(til_x, til_y + 16)].append(
                         (lat1, lon1, lat2, lon2, lat3, lon3)
@@ -610,7 +604,7 @@ def record_water_tris(tile):
                 )
                 a = (til_x2 // 16) % 4
                 b = (til_y2 // 16) % 4
-                # Here an inland water tri is added ONLY if sea water tri were 
+                # Here an inland water tri is added ONLY if sea water tri were
                 # already added for this mask extent
                 if (til_x, til_y) in dico_sea:
                     if (til_x, til_y) in dico_inland:
@@ -639,26 +633,19 @@ def blur_mask(img_array, tile, sea_level):
     ##########################################
     pxscal = GEO.webmercator_pixel_size(tile.lat + 0.5, tile.mask_zl)
     if tile.masking_mode == "sand":
-        blur_width = min(int(tile.masks_width / pxscal), int(pxscal * 1200))
+        blur_width = int(tile.masks_width / pxscal)
     elif tile.masking_mode == "rocks":
-        blur_width = tile.masks_width / (2 * pxscal)
+        blur_width = int(tile.masks_width / (2 * pxscal))
     elif tile.masking_mode == "3steps":
-        blur_width = [L / pxscal for L in tile.masks_width]
-    # Sand mode
+        blur_width = [int(L / pxscal) for L in tile.masks_width]
+    # Sand mode — GaussianBlur PIL (rapide à tout ZL)
     if tile.masking_mode == "sand" and blur_width:
-        # convolution with a hat function
-        b_img_array = numpy.array(img_array)
-        kernel = numpy.array(range(1, 2 * blur_width))
-        kernel[blur_width:] = range(blur_width - 1, 0, -1)
-        kernel = kernel / blur_width ** 2
-        for i in range(0, len(b_img_array)):
-            b_img_array[i] = numpy.convolve(b_img_array[i], kernel, "same")
-        b_img_array = b_img_array.transpose()
-        for i in range(0, len(b_img_array)):
-            b_img_array[i] = numpy.convolve(b_img_array[i], kernel, "same")
-        b_img_array = b_img_array.transpose()
-        b_img_array = 2 * numpy.minimum(b_img_array, 127)
-        b_img_array = numpy.array(b_img_array, dtype=numpy.uint8)
+        b_img_array = numpy.array(
+            Image.fromarray(img_array)
+            .convert("L")
+            .filter(ImageFilter.GaussianBlur(radius=blur_width)),
+            dtype=numpy.uint8,
+        )
     # Rocks mode
     elif tile.masking_mode == "rocks" and blur_width:
         # slight increase of the mask, then gaussian blur, nonlinear map and
@@ -667,62 +654,64 @@ def blur_mask(img_array, tile, sea_level):
             numpy.array(
                 Image.fromarray(img_array)
                 .convert("L")
-                .filter(ImageFilter.GaussianBlur(blur_width / 1.7)),
+                .filter(ImageFilter.GaussianBlur(blur_width / 3)),
                 dtype=numpy.uint8,
             )
             > 0
         ).astype(numpy.uint8) * 255
-        # blur it
         b_img_array = numpy.array(
             Image.fromarray(b_img_array)
             .convert("L")
             .filter(ImageFilter.GaussianBlur(blur_width)),
             dtype=numpy.uint8,
         )
-        # nonlinear transform to make the transition quicker at the shore 
-        # (gaussian is too flat)
-        gamma = 2.5
-        b_img_array = (
-            (
-                (
-                    numpy.tan(
-                        (b_img_array.astype(numpy.float32) - 127.5)
-                        / 128
-                        * atan(3)
-                    )
-                    - numpy.tan(-127.5 / 128 * atan(3))
-                )
-                * 254
-                / (2 * numpy.tan(127.5 / 128 * atan(3)))
+        # nonlinear map
+        b_img_array = numpy.array(
+            255
+            * numpy.sin(
+                numpy.minimum(b_img_array, 127) / 127 * numpy.pi / 2
             )
-            ** gamma
-            / (255 ** (gamma - 1))
-        ).astype(numpy.uint8)
-        # still some slight smoothing at the shore
-        b_img_array = numpy.maximum(
-            b_img_array,
-            numpy.array(
-                Image.fromarray(img_array)
-                .convert("L")
-                .filter(ImageFilter.GaussianBlur(2 ** (tile.mask_zl - 14))),
-                dtype=numpy.uint8,
-            ),
+            ** 2,
+            dtype=numpy.uint8,
         )
-    # 3 steps
-    elif tile.masking_mode == "3steps":
-        # why trying something so complicated...
+        b_img_array = numpy.array(
+            Image.fromarray(b_img_array)
+            .convert("L")
+            .filter(ImageFilter.GaussianBlur(blur_width / 3)),
+            dtype=numpy.uint8,
+        )
+    # 3steps mode
+    elif tile.masking_mode == "3steps" and blur_width:
         transin = blur_width[0]
         midzone = blur_width[1]
         transout = blur_width[2]
-        shore_level = 255
-        b_img_array = b_mask_array = numpy.array(img_array)
-        # First the transition at the shore
-        # We go from shore_level to sea_level in transin meters
+        # We first build the "sea_level" zone
+        sea_b_radius = midzone / 3
+        b_mask_array = (
+            numpy.array(
+                Image.fromarray(img_array)
+                .convert("L")
+                .filter(ImageFilter.GaussianBlur(sea_b_radius)),
+                dtype=numpy.uint8,
+            )
+            > 0
+        ).astype(numpy.uint8) * 255
+        b_mask_array = (
+            numpy.array(
+                Image.fromarray(b_mask_array)
+                .convert("L")
+                .filter(ImageFilter.GaussianBlur(sea_b_radius)),
+                dtype=numpy.uint8,
+            )
+            == 255
+        ).astype(numpy.uint8) * 255
+        # Transition from 255 to sea_level in transin meters
         stepsin = int(transin / 3)
+        b_img_array = numpy.array(img_array)
         for i in range(stepsin):
-            value = shore_level + transition_profile(
-                (i + 1) / stepsin, "parabolic"
-            ) * (sea_level - shore_level)
+            value = 255 - (255 - sea_level) * transition_profile(
+                (i + 1) / stepsin, "spline"
+            )
             b_mask_array = (
                 numpy.array(
                     Image.fromarray(b_mask_array)
@@ -732,10 +721,9 @@ def blur_mask(img_array, tile, sea_level):
                 )
                 > 0
             ).astype(numpy.uint8) * 255
-            b_img_array[(b_img_array == 0) * (b_mask_array != 0)] = value
-            UI.vprint(2, value)
-        # Next the intermediate zone at constant transparency
-        sea_b_radius = midzone / 3
+            b_img_array[b_img_array == 0] = (
+                b_mask_array[b_img_array == 0] > 0
+            ) * value
         sea_b_radius_buffered = (midzone + transout) / 3
         b_mask_array = (
             numpy.array(
@@ -778,7 +766,7 @@ def blur_mask(img_array, tile, sea_level):
             ).astype(numpy.uint8) * 255
             b_img_array[(b_img_array == 0) * (b_mask_array != 0)] = value
             UI.vprint(2, value)
-        # To smoothen the thresolding introduced above we do a global short 
+        # To smoothen the thresolding introduced above we do a global short
         # extent gaussian blur
         b_img_array = numpy.array(
             Image.fromarray(b_img_array)
@@ -799,165 +787,57 @@ def triangulation_to_image(name, pixel_size, grid_size_or_bbox):
     nbr_pt = int(f_node.readline().split()[0])
     vertices = numpy.zeros(2 * nbr_pt)
     for i in range(0, nbr_pt):
-        # Triangle .node files have the node number in front
-        vertices[2 * i : 2 * i + 2] = [
-            float(x) for x in f_node.readline().split()[1:3]
-        ]
+        # Triangle .node files have the node index starting from 1
+        data = f_node.readline().split()
+        vertices[2 * i] = float(data[1])
+        vertices[2 * i + 1] = float(data[2])
     f_node.close()
-    xmin = vertices[::2].min()
-    xmax = vertices[::2].max()
-    ymin = vertices[1::2].min()
-    ymax = vertices[1::2].max()
-    if isinstance(grid_size_or_bbox, tuple):  # bbox
-        bbox = grid_size_or_bbox
-        (xmin, ymin, xmax, ymax) = bbox
-    else:  # float
-        grid_size = grid_size_or_bbox
-        xmin = floor((xmin - grid_size) / grid_size) * grid_size
-        xmax = ceil((xmax + grid_size) / grid_size) * grid_size
-        ymin = floor((ymin - grid_size) / grid_size) * grid_size
-        ymax = ceil((ymax + grid_size) / grid_size) * grid_size
-    mask_im = Image.new(
-        "1", (int((xmax - xmin) / pixel_size), int((ymax - ymin) / pixel_size))
-    )
-    mask_draw = ImageDraw.Draw(mask_im)
     f_ele = open(name + ".1.ele", "r")
     nbr_tri = int(f_ele.readline().split()[0])
-    for i in range(nbr_tri):
-        (n1, n2, n3, tritype) = [
-            int(x) - 1 for x in f_ele.readline().split()[1:5]
-        ]
-        tritype += 1
-        if not tritype:
-            continue
-        (x1, y1) = vertices[2 * n1 : 2 * n1 + 2]
-        (x2, y2) = vertices[2 * n2 : 2 * n2 + 2]
-        (x3, y3) = vertices[2 * n3 : 2 * n3 + 2]
-        (px1, py1) = [
-            round((x1 - xmin) / pixel_size),
-            round((y1 - ymin) / pixel_size),
-        ]
-        (px2, py2) = [
-            round((x2 - xmin) / pixel_size),
-            round((y2 - ymin) / pixel_size),
-        ]
-        (px3, py3) = [
-            round((x3 - xmin) / pixel_size),
-            round((y3 - ymin) / pixel_size),
-        ]
-        try:
-            mask_draw.polygon(
-                [(px1, py1), (px2, py2), (px3, py3)], fill="white"
-            )
-        except:
-            pass
+    if isinstance(grid_size_or_bbox, tuple):
+        (xmin, ymin, xmax, ymax) = grid_size_or_bbox
+        grid_size = (
+            round((xmax - xmin) / pixel_size),
+            round((ymax - ymin) / pixel_size),
+        )
+    else:
+        grid_size = grid_size_or_bbox
+        xmin = vertices[0::2].min()
+        xmax = vertices[0::2].max()
+        ymin = vertices[1::2].min()
+        ymax = vertices[1::2].max()
+    mask_im = Image.new("L", grid_size, "black")
+    mask_draw = ImageDraw.Draw(mask_im)
+    for i in range(0, nbr_tri):
+        data = f_ele.readline().split()
+        n1 = int(data[1]) - 1
+        n2 = int(data[2]) - 1
+        n3 = int(data[3]) - 1
+        px1 = round((vertices[2 * n1] - xmin) / pixel_size)
+        py1 = round((ymax - vertices[2 * n1 + 1]) / pixel_size)
+        px2 = round((vertices[2 * n2] - xmin) / pixel_size)
+        py2 = round((ymax - vertices[2 * n2 + 1]) / pixel_size)
+        px3 = round((vertices[2 * n3] - xmin) / pixel_size)
+        py3 = round((ymax - vertices[2 * n3 + 1]) / pixel_size)
+        mask_draw.polygon([(px1, py1), (px2, py2), (px3, py3)], fill="white")
     f_ele.close()
-    return ((xmin, ymin, xmax, ymax), ImageOps.flip(mask_im).convert("L"))
-
-
+    del mask_draw
+    return mask_im
 ################################################################################
 
-if __name__ == "__main__":
-    UI.log = False
-    UI.verbosity = 2
-    Syntax = (
-        'Syntax :\n',
-        '--------\n',
-        '(PYTHON) extent_code  pixel_size buffer_size blur_size [OSM query] [EPSG code] [bbox_or_grid_size]\n',
-        'All three sizes in meters, buffer_size can be negative too.\n',
-        'If OSM query is not used, data must be cached in an ',
-        'extent_code.osm.bz2 file. EPSG code defaults to 4326, if it is used ',
-        'the OSM query needs to be used too.\n\n',
-        'Example :(from a subdirectory of Extents)\n',
-        '---------\n',
-        'python3 ../../src/O4_Mask_Utils.py Suisse  20 0 400 rel["admin_level"="2"]["name:fr"="Suisse"]'
-    )
-    nargs = len(sys.argv)
-    if not nargs in (5, 6, 7, 8):
-        print(Syntax)
-        sys.exit(1)
-    name = sys.argv[1]
-    cached_file_name = name + ".osm.bz2"
-    if nargs == 5 and not os.path.exists(cached_file_name):
-        print(Syntax)
-        sys.exit(1)
-    if nargs in (6, 7, 8):
-        query_tmp = sys.argv[5]
-        query = ""
-        for char in query_tmp:
-            if char == "[":
-                query += '["'
-            elif char == "]":
-                query += '"]'
-            elif char in ["=", "~"]:
-                query += '"' + char + '"'
-            else:
-                query += char
-    else:
-        query = None
-    if nargs in (7, 8):
-        epsg_code = sys.argv[6]
-    else:
-        epsg_code = "4326"
-    if nargs == 8:
-        grid_size_or_bbox = eval(sys.argv[7])
-    else:
-        grid_size_or_bbox = 0.02 if epsg_code == "4326" else 2000
-    pixel_size = float(sys.argv[2])
-    buffer_width = float(sys.argv[3]) / pixel_size
-    mask_width = int(int(sys.argv[4]) / pixel_size)
-    pixel_size = (
-        pixel_size / 111120 if epsg_code == "4326" else pixel_size
-    )  # assuming meters if not degrees
-    vector_map = VECT.Vector_Map()
-    osm_layer = OSM.OSM_layer()
-    if not os.path.exists(cached_file_name):
-        print("OSM query...")
-        if not OSM.OSM_query_to_OSM_layer(
-            query, "", osm_layer, "all", cached_file_name=cached_file_name
-        ):
-            print("OSM query failed. Exiting.")
-            del vector_map
-            time.sleep(1)
-            sys.exit(0)
-    else:
-        print("Recycling OSM file...")
-        osm_layer.update_dicosm(cached_file_name, None)
-    print("Transform to multipolygon...")
-    multipolygon_area = OSM.OSM_to_MultiPolygon(osm_layer, 0, 0)
-    del osm_layer
-    if not multipolygon_area.area:
-        # try: os.remove(cached_file_name)
-        # except: pass
-        print(
-            "Humm... an empty response. ",
-            "Are you sure about the exact OSM tag for your region ?"
-        )
-        print("Exiting with no extent created.")
-        del vector_map
-        time.sleep(1)
-        sys.exit(0)
-    if epsg_code != "4326":
-        name += "_" + epsg_code
-        print("Changing coordinates to match EPSG code")
-        import shapely.ops
-
-        reprojection = GEO.transformer(4326, int(epsg_code))
-        multipolygon_area = shapely.ops.transform(
-            reprojection, multipolygon_area
-        )
-
-    vector_map.encode_MultiPolygon(
-        multipolygon_area, VECT.dummy_alt, "WATER", check=True, cut=False
-    )
-    vector_map.write_node_file(name + ".node")
-    vector_map.write_poly_file(name + ".poly")
-    print("Triangulate...")
-    MESH.triangulate(name, os.path.join(os.path.dirname(sys.argv[0]), ".."))
-    ((xmin, ymin, xmax, ymax), mask_im) = triangulation_to_image(
-        name, pixel_size, grid_size_or_bbox
-    )
-    print("Mask size : ", mask_im.size, "pixels.")
+################################################################################
+def build_mask_from_triangulation(
+    name,
+    pixel_size,
+    grid_size_or_bbox,
+    mask_width,
+    buffer_width,
+    query=False,
+):
+    mask_im = triangulation_to_image(name, pixel_size, grid_size_or_bbox)
+    img_array = numpy.array(mask_im, dtype=numpy.uint8)
+    (xmin, ymin) = (img_array.nonzero()[1].min(), img_array.nonzero()[0].min())
+    (xmax, ymax) = (img_array.nonzero()[1].max(), img_array.nonzero()[0].max())
     buffer = ""
     try:
         f = open(name + ".ext", "r")

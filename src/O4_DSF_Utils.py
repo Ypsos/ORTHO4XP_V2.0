@@ -305,16 +305,15 @@ def create_terrain_file(
 
         if tri_type in (1, 2) and (not is_overlay):  # XP12 water
             f.write("WATER_COLOR_MASK\n")
-            # BORDER_TEX nécessaire pour limiter WATER_COLOR_MASK à la zone mer
-            # Sans lui, XP12 applique le filtre eau sur toute la tuile → rectangles
-            f.write("BORDER_TEX ../textures/water_transition.png\n")
-            if not os.path.exists(
-                os.path.join(tile.build_dir, "textures", "water_transition.png")
-            ):
-                shutil.copy(
-                    os.path.join(FNAMES.Utils_dir, "water_transition.png"),
-                    os.path.join(tile.build_dir, "textures"),
-                )
+            if tri_type == 1:
+                f.write("BORDER_TEX ../textures/water_transition.png\n")
+                if not os.path.exists(
+                    os.path.join(tile.build_dir, "textures", "water_transition.png")
+                ):
+                    shutil.copy(
+                        os.path.join(FNAMES.Utils_dir, "water_transition.png"),
+                        os.path.join(tile.build_dir, "textures"),
+                    )
         elif (tri_type == 1) or (
             (tri_type == 2) and (is_overlay == "ratio_water")
         ):  # constant transparency level
@@ -326,26 +325,6 @@ def create_terrain_file(
                     os.path.join(FNAMES.Utils_dir, "water_transition.png"),
                     os.path.join(tile.build_dir, "textures"),
                 )
-        elif (tri_type == 2) and (not tile.imprint_masks_to_dds):  
-            # border_tex mask
-            f.write(
-                "LOAD_CENTER_BORDER "
-                + "{:.5f}".format(lat_med)
-                + " "
-                + "{:.5f}".format(lon_med)
-                + " "
-                + str(texture_approx_size)
-                + " "
-                + str(4096 // 2 ** (zoomlevel - tile.mask_zl))
-                + "\n"
-            )
-            f.write(
-                "BORDER_TEX ../textures/"
-                + FNAMES.mask_file(
-                    til_x_left, til_y_top, zoomlevel, provider_code
-                )
-                + "\n"
-            )
 
         # DECAL_LIB uniquement sur terrain terre (tri_type==0)
         # Pas sur eau intérieure (1) ni mer (2) → évite les rectangles overlay

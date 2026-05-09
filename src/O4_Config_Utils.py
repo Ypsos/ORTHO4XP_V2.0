@@ -294,9 +294,9 @@ too low to grab these details.",
     },
     "water_tech": {
             "type": str,
-            "default": "XP11 + bathy",
-            "values" : ("XP12", "XP11 + bathy"),
-            "hint" : "Water tech type. XP12 uses a new (partly in construction) rendering tech, XP11 + bathy uses a more traditionnal blend. Both allows for 3D water."
+            "default": "XP12",
+            "values" : ("XP12",),
+            "hint" : "Water tech type. XP12 uses native X-Plane 12 water rendering (WATER_COLOR_MASK). XP11 + bathy is no longer supported in V2."
     },
     #"add_low_res_sea_ovl": {
     #    "type": bool,
@@ -1160,7 +1160,21 @@ class Ortho4XP_Config(tk.Toplevel):
         old_cfg = os.path.join(FNAMES.Ortho4XP_dir, "Ortho4XP.cfg.bak")
         new_cfg = os.path.join(FNAMES.Ortho4XP_dir, "Ortho4XP.cfg")
         try:
+            # Lire les lignes inconnues de list_global_cfg (ex: language=, custom_dem=)
+            # pour les préserver — elles ne sont pas dans list_global_cfg
+            extra_lines = []
             if os.path.exists(new_cfg):
+                try:
+                    with open(new_cfg, "r", encoding="utf-8") as f_read:
+                        for line in f_read:
+                            stripped = line.strip()
+                            if not stripped or stripped.startswith("#"):
+                                continue
+                            key = stripped.split("=", 1)[0]
+                            if key not in list_global_cfg:
+                                extra_lines.append(stripped)
+                except Exception:
+                    pass
                 os.replace(new_cfg, old_cfg)
             with open(new_cfg, "w", encoding="utf-8") as f:
                 for var in list_global_cfg:
@@ -1170,6 +1184,9 @@ class Ortho4XP_Config(tk.Toplevel):
                         f.write(var + "=" + value + "\n")
                     except Exception as e2:
                         UI.vprint(2, "write_global_cfg: skipping var", var, "->", e2)
+                # Réécrire les lignes préservées (language=, custom_dem=, etc.)
+                for extra in extra_lines:
+                    f.write(extra + "\n")
             UI.vprint(1, "App config written to:", new_cfg)
         except Exception as e:
             UI.lvprint(1, "Could not write global config:", e)
