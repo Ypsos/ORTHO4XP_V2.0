@@ -58,7 +58,7 @@ def bug_report(*args):
 def exit_message_and_bottom_line(*args):
     global is_working
     if not args:
-        args = ("Process interrupted",)
+        args = ("Next Step",)
     if args[0]:
         logprint(*args)
         print(*args)
