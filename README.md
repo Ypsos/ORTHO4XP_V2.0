@@ -116,7 +116,7 @@ L'objectif est de lever définitivement la barrière technique du terminal. Cett
 | **Codage & Support** | Claude (Anthropic AI) |
 | **Travaux originaux** | Oscar Pilote (Ortho4XP) |
 | **Adaptation 1.40** | Shred86 |
-
+| ## Documentation## | English wiki: https://xpconnect.me/ortho4xp/|
 ---
 
 ## ⚠️ Licence
