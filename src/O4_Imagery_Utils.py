@@ -8,6 +8,11 @@ import O4_Geo_Utils as GEO
 import O4_UI_Utils as UI
 import O4_Color_Normalize as CNORM
 import O4_Color_Apply as CAPPLY
+try:
+    import O4_Provider_Score as PSCORE
+    _pscore_enabled = True
+except Exception:
+    _pscore_enabled = False
 import time
 import os
 import sys
@@ -1525,6 +1530,15 @@ def download_jpeg_ortho(
             "received message :", e,
         )
         return 0
+    # ── PROVIDER SCORE : évaluation qualité image téléchargée ──────────
+    if _pscore_enabled:
+        try:
+            _eval_img = Image.open(os.path.join(file_dir, file_name)).convert("RGB")
+            tile_id   = f"{til_y_top}_{til_x_left}_ZL{zoomlevel}"
+            PSCORE.evaluate(_eval_img, provider_code, tile_id, save=True)
+        except Exception:
+            pass
+    # ───────────────────────────────────────────────────────────────────
     return 1
 
 
@@ -2294,6 +2308,39 @@ def convert_texture(
     UI.vprint(
         1, "   Converting orthophoto(s) to build texture " + out_file_name + "."
     )
+    # ── PROVIDER SCORE : évaluation qualité ────────────────────────────
+    if _pscore_enabled:
+        try:
+            _tile_id  = f"{til_y_top}_{til_x_left}_ZL{zoomlevel}"
+            _eval_img = None
+            # Cas 1 : provider simple
+            if provider_code in providers_dict:
+                _jpeg_fn  = FNAMES.jpeg_file_name_from_attributes(
+                    til_x_left, til_y_top, zoomlevel, provider_code)
+                _jpeg_dir = FNAMES.jpeg_file_dir_from_attributes(
+                    tile.lat, tile.lon, zoomlevel, providers_dict[provider_code])
+                _path = os.path.join(_jpeg_dir, _jpeg_fn)
+                if os.path.isfile(_path):
+                    _eval_img = Image.open(_path).convert("RGB")
+            # Cas 2 : combined provider — on prend la première source disponible
+            elif provider_code in local_combined_providers_dict:
+                for _rl in local_combined_providers_dict[provider_code]:
+                    _lcode = _rl["layer_code"]
+                    if _lcode not in providers_dict:
+                        continue
+                    _jpeg_fn  = FNAMES.jpeg_file_name_from_attributes(
+                        til_x_left, til_y_top, zoomlevel, _lcode)
+                    _jpeg_dir = FNAMES.jpeg_file_dir_from_attributes(
+                        tile.lat, tile.lon, zoomlevel, providers_dict[_lcode])
+                    _path = os.path.join(_jpeg_dir, _jpeg_fn)
+                    if os.path.isfile(_path):
+                        _eval_img = Image.open(_path).convert("RGB")
+                        break
+            if _eval_img is not None:
+                PSCORE.evaluate(_eval_img, provider_code, _tile_id, save=True)
+        except Exception:
+            pass
+    # ───────────────────────────────────────────────────────────────────
     erase_tmp_png = False
     erase_tmp_tif = False
     dxt5 = False

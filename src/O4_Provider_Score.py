@@ -173,9 +173,9 @@ def _log_score(score: ProviderScore):
         f"[ProviderScore] {score.provider_code} / {score.tile_id}\n"
         f"  Bruit        : {score.noise:.1f}/100\n"
         f"  Compression  : {score.compression:.1f}/100\n"
-        f"  Nuages       : {score.cloud:.1f}/100\n"
+        f"  Nuages       : {max(0.0, 100.0 - score.cloud):.1f}% couverture\n"
         f"  Colorimétrie : {score.color_drift:.1f}/100\n"
-        f"  Seam risk    : {score.seam_risk:.1f}/100\n"
+        f"  Seam risk    : {max(0.0, 100.0 - score.seam_risk):.1f}% risque jointure\n"
         f"  SCORE GLOBAL : {score.global_score:.1f}/100  {score.label()}"
     )
     try:
@@ -194,7 +194,7 @@ def evaluate(image: Image.Image,
              save: bool = True) -> ProviderScore:
     score = ProviderScore(provider_code, tile_id)
 
-    thumb = image.convert("RGB").resize((512, 512), Image.BICUBIC)
+    thumb = image.convert("RGB").resize((64, 64), Image.BICUBIC)
     arr   = numpy.array(thumb, dtype=numpy.uint8)
 
     score.noise,       d1 = _score_noise(arr)
