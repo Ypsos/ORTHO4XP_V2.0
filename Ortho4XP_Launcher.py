@@ -42,7 +42,7 @@ def _check_folder_name():
     folder_name = BASE_DIR.name
     # Détection du double nom GitHub (contient un tiret suivi du même nom)
     if "-" in folder_name and folder_name.count("ORTHO4XP") >= 2:
-        correct_name = "ORTHO4XP_V2"
+        correct_name = "ORTHO4XP_V3"
         parent = BASE_DIR.parent
         correct_path = parent / correct_name
         # Afficher alerte tkinter minimale avant ouverture du lanceur
@@ -111,11 +111,11 @@ class HoverButton(tk.Canvas):
 class Launcher(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Ortho4XP V2.0 Launcher - Roland Edition")
+        self.title("Ortho4XP V3.0 Launcher - Roland Edition")
         self.geometry("950x950")
         self.configure(bg=BG_GLOBAL)
 
-        tk.Label(self, text="Ortho4XP V2.0", font=("Helvetica", 36, "bold"),
+        tk.Label(self, text="Ortho4XP V3.0", font=("Helvetica", 36, "bold"),
                  fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(20, 0))
         tk.Label(self, text="Version : Mac • Linux • Windows", 
                  font=("Helvetica", 14, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(0, 15))
@@ -135,9 +135,47 @@ class Launcher(tk.Tk):
         col2.grid(row=0, column=1, padx=15)
         HoverButton(col2, tr("🔍 Vérifier Intégrité"), self.check_integrity).pack(pady=8)
 
+        # ── Sélecteur de thème ────────────────────────────────────────────
+        theme_frame = tk.Frame(self, bg=BG_GLOBAL)
+        theme_frame.pack(pady=(5, 10))
+
+        tk.Label(theme_frame, text="🎨 Thème :", bg=BG_GLOBAL,
+                 fg="#a6e3a1", font=("Helvetica", 13, "bold")).pack(side="left", padx=(0, 8))
+
+        # Chargement des thèmes disponibles
+        self._theme_names = ["roland", "ardoise", "sable", "ocean", "custom"]
+        try:
+            sys.path.insert(0, str(SRC_DIR))
+            import O4_Theme_Manager as _TM
+            self._theme_names = list(_TM.list_themes().keys())
+            self._tm = _TM
+        except Exception:
+            self._tm = None
+
+        self._theme_var = tk.StringVar(value=self._theme_names[0])
+        try:
+            if self._tm:
+                self._theme_var.set(self._tm.current_theme_name())
+        except Exception:
+            pass
+
+        theme_combo = tk.OptionMenu(theme_frame, self._theme_var, *self._theme_names,
+                                    command=self._apply_theme)
+        theme_combo.config(bg=BG_GLOBAL, fg="#a6e3a1", font=("Helvetica", 12),
+                           activebackground=BG_GLOBAL, highlightthickness=0,
+                           relief="flat", bd=1)
+        theme_combo["menu"].config(bg=BG_GLOBAL, fg="#a6e3a1", font=("Helvetica", 12))
+        theme_combo.pack(side="left", padx=4)
+
+        tk.Button(theme_frame, text="🎨", font=("Helvetica", 16),
+                  bg=BG_GLOBAL, fg="#a6e3a1", relief="flat", bd=0,
+                  activebackground=BG_GLOBAL, cursor="hand2",
+                  command=self._apply_theme_btn).pack(side="left", padx=4)
+        # ─────────────────────────────────────────────────────────────────
+
         # Gros bouton LANCER en dessous
         HoverButton(self, tr("▶️ LANCER ORTHO4XP"), self.launch_ortho, 
-                    width=800, height=70, font_size=20).pack(pady=(25, 30))
+                    width=800, height=70, font_size=20).pack(pady=(15, 30))
 
         self._log(f"📍 Dossier : {BASE_DIR}")
         self.check_integrity()
@@ -156,6 +194,45 @@ class Launcher(tk.Tk):
             self._log("✅ Ortho4XP.cfg présent.\n")
         self._log("----------------------------------\n")
 
+    # ── Gestion du thème ──────────────────────────────────────────────────
+    def _apply_theme(self, theme_name=None):
+        """Applique le thème sélectionné à toute la fenêtre."""
+        if not self._tm:
+            return
+        name = theme_name or self._theme_var.get()
+        if self._tm.set_theme(name):
+            t = self._tm.get_theme()
+            self._repaint(self, t)
+            self._log(f"🎨 Thème appliqué : {name}")
+
+    def _apply_theme_btn(self):
+        """Bouton palette — applique le thème actuel sélectionné."""
+        self._apply_theme(self._theme_var.get())
+
+    def _repaint(self, widget, t):
+        """Repeint récursivement tous les widgets avec le thème."""
+        try:
+            wclass = widget.winfo_class()
+            if wclass in ("Frame", "Toplevel"):
+                widget.configure(bg=t["bg"])
+            elif wclass == "Label":
+                widget.configure(bg=t["bg"], fg=t["fg_secondary"])
+            elif wclass == "Text":
+                widget.configure(bg=t["console_bg"], fg=t["console_fg"])
+            elif wclass == "Button":
+                widget.configure(bg=t["btn_bg"], fg=t["btn_fg"],
+                                 activebackground=t["btn_hover"])
+            elif wclass == "OptionMenu":
+                widget.configure(bg=t["bg"], fg=t["fg_secondary"])
+        except Exception:
+            pass
+        try:
+            for child in widget.winfo_children():
+                self._repaint(child, t)
+        except Exception:
+            pass
+
+    # ── Callbacks tile_change / update_cfg ────────────────────────────────
     def _log(self, msg):
         self.log.insert("end", f"> {msg}\n")
         self.log.see("end")
@@ -425,9 +502,9 @@ int main(int argc, char **argv) {
 <plist version="1.0"><dict>
     <key>CFBundleExecutable</key><string>launch</string>
     <key>CFBundleIdentifier</key><string>com.ypsos.ortho4xp.daily</string>
-    <key>CFBundleName</key><string>ORTHO4XP V2 Lanceur</string>
-    <key>CFBundleDisplayName</key><string>ORTHO4XP V2 Lanceur</string>
-    <key>CFBundleVersion</key><string>2.0</string>
+    <key>CFBundleName</key><string>ORTHO4XP V3 Lanceur</string>
+    <key>CFBundleDisplayName</key><string>ORTHO4XP V3 Lanceur</string>
+    <key>CFBundleVersion</key><string>3.0</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>12.0</string>
     <key>NSHighResolutionCapable</key><true/>
@@ -527,10 +604,10 @@ int main(int argc, char **argv) {
   "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
     <key>CFBundleExecutable</key><string>launch</string>
-    <key>CFBundleIdentifier</key><string>com.ypsos.ortho4xp.v2.lanceur</string>
-    <key>CFBundleName</key><string>ORTHO4XP V2 Lanceur</string>
-    <key>CFBundleDisplayName</key><string>ORTHO4XP V2 Lanceur</string>
-    <key>CFBundleVersion</key><string>2.0</string>
+    <key>CFBundleIdentifier</key><string>com.ypsos.ortho4xp.v3.lanceur</string>
+    <key>CFBundleName</key><string>ORTHO4XP V3 Lanceur</string>
+    <key>CFBundleDisplayName</key><string>ORTHO4XP V3 Lanceur</string>
+    <key>CFBundleVersion</key><string>3.0</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>12.0</string>
     <key>NSHighResolutionCapable</key><true/>
