@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-create_launcher.py — Ortho4XP V2.0
+create_launcher.py — Ortho4XP V3.0
 Génère le lanceur natif par plateforme :
   macOS   → Lanceur_Installation_Prerequis.app  (binaire C autonome, zéro dépendance)
   Windows → Lanceur_Installation_Prerequis.vbs
@@ -73,7 +73,7 @@ static void notify(const char *title, const char *msg) {
     char script[2048];
     snprintf(script, sizeof(script),
         "display notification \"%s\" "
-        "with title \"%s\" subtitle \"Ortho4XP V2.0\"",
+        "with title \"%s\" subtitle \"Ortho4XP V3.0\"",
         msg, title);
     char *args[] = { "/usr/bin/osascript", "-e", script, NULL };
     pid_t pid = fork();
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
 
     /* 4. Python absent → installer Homebrew + Python */
     if (!has_py) {
-        dialog("Ortho4XP V2.0 — Installation requise",
+        dialog("Ortho4XP V3.0 — Installation requise",
             "Python 3.12 n'est pas installe sur ce Mac.\\n\\n"
             "L'installation va demarrer automatiquement :\\n"
             "  - Homebrew\\n"
@@ -291,7 +291,7 @@ INFO_PLIST = """<?xml version="1.0" encoding="UTF-8"?>
 """
 
 VBS_SCRIPT = r"""
-' Lanceur_Installation_Prerequis.vbs — Ortho4XP V2.0
+' Lanceur_Installation_Prerequis.vbs — Ortho4XP V3.0
 ' Lance INSTALL_PREREQUIS.py sans console noire
 ' Installe Python 3.12 via winget si absent
 
@@ -334,7 +334,7 @@ If python = "" Then
         "L'installation va demarrer automatiquement." & vbCrLf & _
         "Duree estimee : 2 a 5 minutes." & vbCrLf & vbCrLf & _
         "Cliquez OK pour continuer.", _
-        vbOKCancel + vbInformation, "Ortho4XP V2.0 — Installation Python")
+        vbOKCancel + vbInformation, "Ortho4XP V3.0 — Installation Python")
 
     If answer <> vbOK Then WScript.Quit
 
@@ -500,12 +500,12 @@ PY312=$(find_py312)
 }
 
 if [ -z "$PY312" ]; then
-    osascript -e 'display dialog "Python 3.12 nest pas installé.\n\nInstallation automatique :\n• Homebrew\n• Python 3.12\n\n⏱ 5-15 minutes.\nCliquez OK." buttons {"OK"} default button "OK" with title "Ortho4XP V2.0" with icon note'
+    osascript -e 'display dialog "Python 3.12 nest pas installé.\n\nInstallation automatique :\n• Homebrew\n• Python 3.12\n\n⏱ 5-15 minutes.\nCliquez OK." buttons {"OK"} default button "OK" with title "Ortho4XP V3.0" with icon note'
 
     BREW=/opt/homebrew/bin/brew
     [ ! -f "$BREW" ] && BREW=/usr/local/bin/brew
     [ ! -f "$BREW" ] && {
-        osascript -e 'display notification "Installation Homebrew..." with title "Étape 1/3" subtitle "Ortho4XP V2.0"'
+        osascript -e 'display notification "Installation Homebrew..." with title "Étape 1/3" subtitle "Ortho4XP V3.0"'
         NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >> "$LOG" 2>&1
         BREW=/opt/homebrew/bin/brew
         [ ! -f "$BREW" ] && BREW=/usr/local/bin/brew
@@ -515,23 +515,23 @@ if [ -z "$PY312" ]; then
         exit 1
     }
 
-    osascript -e 'display notification "Installation Python 3.12..." with title "Étape 2/3" subtitle "Ortho4XP V2.0"'
+    osascript -e 'display notification "Installation Python 3.12..." with title "Étape 2/3" subtitle "Ortho4XP V3.0"'
     "$BREW" install python@3.12 python-tk@3.12 >> "$LOG" 2>&1
     PY312=$(find_py312)
     [ -z "$PY312" ] && {
         osascript -e 'display dialog "Python 3.12 na pas pu être installé.\nbrew install python@3.12 python-tk@3.12" buttons {"OK"} default button "OK" with title "Erreur" with icon stop'
         exit 1
     }
-    osascript -e 'display notification "Python 3.12 installé ✓" with title "✅ Étape 3/3" subtitle "Ortho4XP V2.0"'
+    osascript -e 'display notification "Python 3.12 installé ✓" with title "✅ Étape 3/3" subtitle "Ortho4XP V3.0"'
 fi
 
 [ ! -f "$VENV_PY" ] && {
-    osascript -e 'display notification "Création environnement Python..." with title "Préparation" subtitle "Ortho4XP V2.0"'
+    osascript -e 'display notification "Création environnement Python..." with title "Préparation" subtitle "Ortho4XP V3.0"'
     "$PY312" -m venv "$ROOT_DIR/venv" >> "$LOG" 2>&1
 }
 
 PY_USE="$VENV_PY"; [ ! -f "$PY_USE" ] && PY_USE="$PY312"
-osascript -e 'display notification "Ouverture du Launcher..." with title "Lancement" subtitle "Ortho4XP V2.0"'
+osascript -e 'display notification "Ouverture du Launcher..." with title "Lancement" subtitle "Ortho4XP V3.0"'
 PYTHONPATH="$ROOT_DIR/src" "$PY_USE" "$BOOTSTRAP" &
 """
     exe_out.write_text(script, encoding="utf-8")
@@ -554,7 +554,7 @@ def create_windows_launcher():
                         f'$sc=$ws.CreateShortcut("{shortcut}");'
                         f'$sc.TargetPath="{vbs_path}";'
                         f'$sc.WorkingDirectory="{HERE}";'
-                        f'$sc.Description="Ortho4XP V2.0";$sc.Save()'],
+                        f'$sc.Description="Ortho4XP V3.0";$sc.Save()'],
                        capture_output=True, timeout=15)
         print("  ✅ Raccourci Bureau créé.")
     except Exception as e:
@@ -586,7 +586,7 @@ PYTHONPATH="$ROOT_DIR/src" "$PYTHON" "$BOOTSTRAP" &
     desktop_path = HERE / "Lanceur_Installation_Prerequis.desktop"
     desktop_path.write_text(
         f"[Desktop Entry]\nVersion=2.0\nName=Lanceur Installation Prerequis\n"
-        f"Comment=Installation Ortho4XP V2.0\nExec={sh_path}\nPath={HERE}\n"
+        f"Comment=Installation Ortho4XP V3.0\nExec={sh_path}\nPath={HERE}\n"
         f"Terminal=false\nType=Application\nCategories=Utility;\nStartupNotify=true\n",
         encoding="utf-8")
     desktop_path.chmod(
@@ -604,7 +604,7 @@ PYTHONPATH="$ROOT_DIR/src" "$PYTHON" "$BOOTSTRAP" &
 
 def main():
     print("=" * 58)
-    print("  Ortho4XP V2.0 — Création du lanceur natif")
+    print("  Ortho4XP V3.0 — Création du lanceur natif")
     print(f"  Plateforme : {SYSTEM} | Dossier : {HERE}")
     print("=" * 58)
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ╔══════════════════════════════════════════════════════╗
-║   ORTHO4XP V2.0 — INSTALLATION PRÉREQUIS              ║
+║   Ortho4XP V3.0 — INSTALLATION PRÉREQUIS              ║
 ║   Bootstrap autonome multiplateforme                 ║
 ║   Roland (Ypsos) — Mars 2026                 ║
 ║   macOS (Apple Silicon + Intel) / Windows / Linux    ║
@@ -459,13 +459,13 @@ if HAS_TK:
             fsize_log    = 12
             fsize_btn    = 13
             fsize_launch = 20
-            self.title("Ortho4XP V2.0 — Installation Prérequis")
+            self.title("Ortho4XP V3.0 — Installation Prérequis")
             self.configure(bg=BG_GLOBAL)
             self.resizable(True, True)
             self.geometry("950x950")
             self.minsize(950, 950)
             # ── Titre ───────────────────────────────────────────────────────────
-            tk.Label(self, text="✈  Ortho4XP V2.0",
+            tk.Label(self, text="✈  Ortho4XP V3.0",
                      font=("Helvetica", fsize_title, "bold"),
                      fg=GREEN_OK, bg=BG_GLOBAL).pack(pady=(20, 0))
             tk.Label(self, text="Version : Mac • Linux • Windows",
@@ -655,7 +655,7 @@ if HAS_TK:
 
 def run_console():
     print("=" * 55)
-    print("  ORTHO4XP V2.0 — INSTALLATION PRÉREQUIS (mode texte)")
+    print("  Ortho4XP V3.0 — INSTALLATION PRÉREQUIS (mode texte)")
     print("=" * 55)
     print(f"Plateforme : {SYSTEM} / {MACHINE}")
     print(f"Dossier    : {BASE_DIR}")

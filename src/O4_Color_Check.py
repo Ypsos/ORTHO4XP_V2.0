@@ -397,6 +397,13 @@ class ColorCheckWindow(tk.Toplevel):
         self.after(200, self._scan)
 
 
+
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
     # ─────────────────────────────────────────────────────────────
     # Résolution dossier textures
     # ─────────────────────────────────────────────────────────────
@@ -1881,6 +1888,12 @@ class CombZoneEditor(tk.Toplevel):
         self.bind("<BackSpace>",                lambda e: self._delete_selected())
 
         threading.Thread(target=self._load_image, daemon=True).start()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
 
     # ── Chargement image ────────────────────────────────────────────
 
@@ -2127,6 +2140,12 @@ class BatchPreviewWindow(tk.Toplevel):
         ttk.Button(self, text="Fermer", command=self.destroy).pack(pady=(0, 8))
 
         threading.Thread(target=self._load_all, daemon=True).start()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
 
     def _load_all(self):
         T    = self.THUMB_SIZE
@@ -2342,6 +2361,12 @@ class BatchZoomWindow(tk.Toplevel):
         ttk.Button(bf, text="Fermer",        command=self.destroy).pack(side=LEFT, padx=6)
 
         self.after(100, self._render)
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
 
     def _reset_zoom(self):
         self._zoom  = 1.0
@@ -2639,6 +2664,12 @@ class FusionPreviewWindow(tk.Toplevel):
 
         import threading
         threading.Thread(target=self._compute, daemon=True).start()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
 
     # ── Calcul (thread) ──────────────────────────────────────────────
 

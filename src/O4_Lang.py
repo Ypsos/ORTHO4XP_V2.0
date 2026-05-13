@@ -196,7 +196,7 @@ def show_language_dialog(parent=None, on_change=None):
         btn_style = ttk.Style(msg_win)
         btn_style.configure("Msg.TButton",
                             font=("TkFixedFont", 12, "bold"),
-                            foreground="#e8f0ec",
+                            foreground="#000000",
                             background="#3b5b49",
                             padding=12)
         btn_txt = "  ✅  OK  — Click here to close  " if _current_lang == "EN" else "  ✅  OK  — Cliquez ici pour fermer  "
@@ -228,7 +228,7 @@ def show_language_dialog(parent=None, on_change=None):
     tk.Label(
         win,
         text="(current: {}  -  saved in {})".format(_current_lang, cfg_short),
-        bg="#1e2d1e", fg="#555555",
+        bg="#1e2d1e", fg="#c0c0c0",
         font=("TkFixedFont", 9),
     ).pack(pady=(10, 0))
 

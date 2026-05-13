@@ -621,7 +621,7 @@ class Ortho4XP_Config(tk.Toplevel):
 
         tk.Toplevel.__init__(self)
         self.option_add("*Font", "TkFixedFont")
-        self.title("Ortho4XP Config")
+        self.title("Ortho4XP V3 Config")
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
         if self.winfo_screenheight() >= 1024:
@@ -938,6 +938,12 @@ class Ortho4XP_Config(tk.Toplevel):
         self.v_["default_website"] = parent.default_website
         self.v_["default_zl"] = parent.default_zl
         self.load_interface_from_variables()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
 
     def _open_simulator(self):
         try:

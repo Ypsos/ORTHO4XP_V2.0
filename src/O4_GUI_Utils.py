@@ -81,7 +81,7 @@ class Ortho4XP_GUI(tk.Tk):
             self.map_list = ["BI","GO2","ARC","IGN","SWISSTOPO","ZonePhoto"]
 
         # ── Fenêtre ───────────────────────────────────────────────────
-        self.title("Ortho4XP V2.0 - sRGB Roland Edition (Mars 2026)")
+        self.title("Ortho4XP V3.0 - sRGB Roland Edition (Mars 2026)")
         self.geometry(f"{int(1320*s)}x{int(860*s)}")
         self.minsize(1320, 860)
         self.protocol("WM_DELETE_WINDOW", self.exit_prg)
@@ -701,6 +701,13 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
         self.canvas = tk.Canvas(self.frame_right, bd=0, height=750, width=750)
         self.canvas.grid(row=0, column=0, sticky=N + S + E + W)
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
+
 
     def preview_tile(self, lat, lon):
         # Recharger les zones depuis le .cfg de la tuile
@@ -1406,6 +1413,12 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             x0, y0, x1, y1, fill="", outline="yellow", width=3
         )
         self.threaded_preview()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
         return
 
     def set_working_dir(self):
@@ -2042,6 +2055,13 @@ class Ortho4XP_Simulator(tk.Toplevel):
         self._build_ui()
         self._load_values()
         self._anim_loop()
+        # ── Thème couleurs ────────────────────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass
+
 
     def _on_close(self):
         self._anim_running = False

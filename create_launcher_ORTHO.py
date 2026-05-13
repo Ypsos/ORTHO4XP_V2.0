@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-create_launcher.py — Version V2.0 Hybride (Mars 2026)
+create_launcher.py — Version V3.0 Hybride (Mars 2026)
 Crée un lanceur natif portable :
   • macOS   → Ortho4XP.app (Binaire universel, déplaçable)
   • Windows → Ortho4XP.vbs
@@ -147,7 +147,7 @@ def create_linux_launcher(sys_python: str):
 # ══════════════════════════════════════════════════════════════════════════
 
 def main():
-    print(f"--- Création du lanceur Ortho4XP V2.0 ({SYSTEM}) ---")
+    print(f"--- Création du lanceur Ortho4XP V3.0 ({SYSTEM}) ---")
     sys_py = find_python()
     
     if SYSTEM == "Darwin":
