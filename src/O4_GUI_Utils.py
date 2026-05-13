@@ -22,6 +22,30 @@ import O4_Color_Normalize as CNORM
 import O4_Color_Check as CC
 from O4_Lang import tr
 
+# --- THEME ---
+_BG     = "#3b5b49"
+_FG     = "#e8f0ec"
+_FG2    = "#a6e3a1"
+_BTN_BG = "#4a6b59"
+_BTN_FG = "#ffffff"
+_CON_BG = "#0f0f1a"
+_CON_FG = "#50fa7b"
+_ACCENT = "#a6e3a1"
+try:
+    import O4_Theme_Manager as _TM
+    _t      = _TM.get_theme()
+    _BG     = _t.get("bg",           _BG)
+    _FG     = _t.get("fg",           _FG)
+    _FG2    = _t.get("fg_secondary", _FG2)
+    _BTN_BG = _t.get("btn_bg",       _BTN_BG)
+    _BTN_FG = _t.get("btn_fg",       _BTN_FG)
+    _CON_BG = _t.get("console_bg",   _CON_BG)
+    _CON_FG = _t.get("console_fg",   _CON_FG)
+    _ACCENT = _t.get("accent",       _ACCENT)
+except Exception:
+    pass
+# -------------
+
 OsX = "dar" in sys.platform
 
 
@@ -42,11 +66,11 @@ class Ortho4XP_GUI(tk.Tk):
         O4 = ttk.Style()
         O4.theme_use("alt")
         O4.configure("Flat.TButton",
-            background="#3b5b49", highlightbackground="#3b5b49",
-            selectbackground="#3b5b49", highlightcolor="#3b5b49",
+            background=_BG, highlightbackground=_BG,
+            selectbackground=_BG, highlightcolor=_BG,
             highlightthickness=0, relief="flat")
         O4.map("Flat.TButton",
-            background=[("disabled","pressed","!focus","active","#3b5b49")])
+            background=[("disabled","pressed","!focus","active",_BG)])
         O4.configure("O4.TCombobox",
             selectbackground="white", selectforeground="#1e3028",
             fieldbackground="white", foreground="#1e3028", background="white")
@@ -108,35 +132,35 @@ class Ortho4XP_GUI(tk.Tk):
         self.exit_icon   = _load_icon("Exit.gif")
 
         # ── FRAME TOP (lat/lon + Base Folder + boutons + steps + bars) ─
-        self.frame_top = tk.Frame(self, border=4, relief=RIDGE, bg="#3b5b49")
+        self.frame_top = tk.Frame(self, border=4, relief=RIDGE, bg=_BG)
         self.frame_top.grid(row=0, column=0, sticky=N+S+W+E)
         self.frame_top.columnconfigure(0, weight=1)
 
         # ── FRAME TILE (ligne 0 : lat/lon/imagery/zl + icônes) ────────
-        self.frame_tile = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg="#3b5b49")
+        self.frame_tile = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg=_BG)
         self.frame_tile.grid(row=0, column=0, sticky=N+S+W+E)
         self.frame_tile.columnconfigure(5, weight=1)   # imagery s'étire
 
         self.lat = tk.StringVar()
         self.lat.trace_add("write", self.tile_change)
-        tk.Label(self.frame_tile, text=tr("Latitude:"),  bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Latitude:"),  bg=_BG, fg=_FG, font=("TkFixedFont", fs(11))).grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
         self.lat_entry = tk.Entry(self.frame_tile, width=5, bg="#f0f4f2", fg="#1e3028", textvariable=self.lat)
         self.lat_entry.grid(row=0, column=1, padx=5, pady=5, sticky=W)
 
         self.lon = tk.StringVar()
         self.lon.trace_add("write", self.tile_change)
-        tk.Label(self.frame_tile, text=tr("Longitude:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Longitude:"), bg=_BG, fg=_FG, font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=5, pady=5, sticky=E+W)
         self.lon_entry = tk.Entry(self.frame_tile, width=5, bg="#f0f4f2", fg="#1e3028", textvariable=self.lon)
         self.lon_entry.grid(row=0, column=3, padx=5, pady=5, sticky=W)
 
-        tk.Label(self.frame_tile, text=tr("Imagery:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=4, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Imagery:"), bg=_BG, fg=_FG, font=("TkFixedFont", fs(11))).grid(row=0, column=4, padx=5, pady=5, sticky=E+W)
         self.default_website = tk.StringVar()
         self.default_website.trace_add("write", self.update_cfg)
         self.img_combo = ttk.Combobox(self.frame_tile, values=self.map_list,
             textvariable=self.default_website, state="readonly", width=40)
         self.img_combo.grid(row=0, column=5, padx=5, pady=5, sticky=W)
 
-        tk.Label(self.frame_tile, text=tr("Zoomlevel:"), bg="#3b5b49", fg="#e8f0ec", font=("TkFixedFont", fs(11))).grid(row=0, column=6, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_tile, text=tr("Zoomlevel:"), bg=_BG, fg=_FG, font=("TkFixedFont", fs(11))).grid(row=0, column=6, padx=5, pady=5, sticky=E+W)
         self.default_zl = tk.StringVar()
         self.default_zl.trace_add("write", self.update_cfg)
         self.zl_combo = ttk.Combobox(self.frame_tile, values=self.zl_list,
@@ -166,11 +190,11 @@ class Ortho4XP_GUI(tk.Tk):
 
 
         # ── FRAME FOLDER (ligne 1 : Base Folder) ──────────────────────
-        self.frame_folder = tk.Frame(self.frame_top, border=0, padx=5, pady=0, bg="#3b5b49")
+        self.frame_folder = tk.Frame(self.frame_top, border=0, padx=5, pady=0, bg=_BG)
         self.frame_folder.grid(row=1, column=0, sticky=N+S+W+E)
         self.frame_folder.columnconfigure(1, weight=1)
 
-        tk.Label(self.frame_folder, text=tr("Base Folder:"), bg="#3b5b49", fg="#e8f0ec").grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
+        tk.Label(self.frame_folder, text=tr("Base Folder:"), bg=_BG, fg=_FG).grid(row=0, column=0, padx=5, pady=5, sticky=E+W)
         self.custom_build_dir = tk.StringVar()
         self.custom_build_dir_entry = tk.Entry(self.frame_folder, bg="#f0f4f2", fg="#1e3028",
             textvariable=self.custom_build_dir)
@@ -183,7 +207,7 @@ class Ortho4XP_GUI(tk.Tk):
         ttk.Button(self.frame_folder, **kw_folder).grid(row=0, column=2, padx=0, pady=0, sticky=N+S+E+W)
 
         # ── FRAME STEPS (ligne 2 : 5 boutons build) ───────────────────
-        self.frame_steps = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg="#3b5b49")
+        self.frame_steps = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg=_BG)
         self.frame_steps.grid(row=2, column=0, sticky=N+S+W+E)
         for i in range(5): self.frame_steps.columnconfigure(i, weight=1)
 
@@ -204,7 +228,7 @@ class Ortho4XP_GUI(tk.Tk):
             row=0, column=4, padx=5, pady=0, sticky=N+S+E+W)
 
         # ── FRAME BARS (ligne 3 : barres de progression) ──────────────
-        self.frame_bars = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg="#3b5b49")
+        self.frame_bars = tk.Frame(self.frame_top, border=0, padx=5, pady=5, bg=_BG)
         self.frame_bars.grid(row=3, column=0, sticky=N+S+W+E)
 
         self.pgrb1v = tk.IntVar()
@@ -220,42 +244,42 @@ class Ortho4XP_GUI(tk.Tk):
 
         # ── BARRE COLOR NORMALIZE (ligne 4 — EN BAS des boutons) ──────
         self.frame_cnorm = tk.Frame(self.frame_top, border=3, relief=RIDGE,
-                                    padx=8, pady=4, bg="#3b5b49")
+                                    padx=8, pady=4, bg=_BG)
         self.frame_cnorm.grid(row=4, column=0, sticky=N+S+W+E)
         for i in range(8): self.frame_cnorm.columnconfigure(i, weight=1)
 
         # ── LIGNE 1 : Color Normalize | Enable | Strength | slider | % | Réf ──
         for i in range(6): self.frame_cnorm.columnconfigure(i, weight=1)
 
-        tk.Label(self.frame_cnorm, text=tr("Color Normalize"), bg="#3b5b49", fg="#a6e3a1",
+        tk.Label(self.frame_cnorm, text=tr("Color Normalize"), bg=_BG, fg=_FG2,
                  font=("TkFixedFont", fs(11), "bold"), padx=8).grid(
                  row=0, column=0, sticky=W+E, padx=4, pady=2)
 
         self.cnorm_enabled = tk.IntVar(value=1)
         self.cnorm_checkbox = tk.Checkbutton(self.frame_cnorm, text=tr("Enable"),
-            fg="#e8f0ec", selectcolor="#2a4035",
-            activeforeground="#ffffff", activebackground="#3b5b49",
+            fg=_FG, selectcolor=_BG,
+            activeforeground="#ffffff", activebackground=_BG,
             variable=self.cnorm_enabled, command=self.toggle_cnorm,
-            font=("TkFixedFont", fs(11), "bold"), bg="#3b5b49")
+            font=("TkFixedFont", fs(11), "bold"), bg=_BG)
         self.cnorm_checkbox.grid(row=0, column=1, padx=8, sticky=W)
 
-        tk.Label(self.frame_cnorm, text=tr("Strength:"), bg="#3b5b49", fg="#e8f0ec",
+        tk.Label(self.frame_cnorm, text=tr("Strength:"), bg=_BG, fg=_FG,
                  font=("TkFixedFont", fs(11))).grid(row=0, column=2, padx=6, sticky=E)
 
-        self.cnorm_strength = tk.IntVar(value=85)
+        self.cnorm_strength = tk.IntVar(value=100)
         self.cnorm_slider = tk.Scale(self.frame_cnorm, from_=0, to=100, orient=HORIZONTAL,
             variable=self.cnorm_strength, command=self.update_cnorm_strength,
-            bg="#3b5b49", fg="#e8f0ec", troughcolor="#1a2e25",
+            bg=_BG, fg=_FG, troughcolor="#1a2e25",
             length=int(200*s), showvalue=True)
         self.cnorm_slider.grid(row=0, column=3, padx=6, sticky=W+E)
 
-        self.cnorm_pct_label = tk.Label(self.frame_cnorm, text="85%",
-            bg="#3b5b49", fg="#a6e3a1", font=("TkFixedFont", fs(12), "bold"))
+        self.cnorm_pct_label = tk.Label(self.frame_cnorm, text="100%",
+            bg=_BG, fg=_FG2, font=("TkFixedFont", fs(12), "bold"))
         self.cnorm_pct_label.grid(row=0, column=4, padx=6, sticky=W)
 
         self.cnorm_ref_label = tk.Label(self.frame_cnorm,
             text="Réf: Calibré_48753_JPG_Europe",
-            bg="#3b5b49", fg="#a6e3a1",
+            bg=_BG, fg=_FG2,
             font=("TkFixedFont", fs(11), "bold"))
         self.cnorm_ref_label.grid(row=0, column=5, padx=10, sticky=W+E)
 
@@ -268,7 +292,7 @@ class Ortho4XP_GUI(tk.Tk):
             width=32).grid(row=1, column=3, padx=5, pady=(8,4))
 
         # ── CONSOLE (row=1 principal — extensible) ─────────────────────
-        self.frame_console = tk.Frame(self, border=4, relief=RIDGE, bg="#3b5b49")
+        self.frame_console = tk.Frame(self, border=4, relief=RIDGE, bg=_BG)
         self.frame_console.grid(row=1, column=0, sticky=N+S+W+E, padx=4, pady=4)
         self.frame_console.rowconfigure(0, weight=1)
         self.frame_console.columnconfigure(0, weight=1)
@@ -282,6 +306,13 @@ class Ortho4XP_GUI(tk.Tk):
         self.pgrb_update()
         self.stdout_orig = sys.stdout
         sys.stdout = self
+
+        # ── Application du thème couleurs ─────────────────────────────
+        try:
+            import O4_Theme_Manager as _TM
+            _TM.apply_to_root(self)
+        except Exception:
+            pass  # si O4_Theme_Manager absent → couleurs par défaut conservées
 
         # ── Restauration dernière session ──────────────────────────────
         try:
@@ -303,7 +334,7 @@ class Ortho4XP_GUI(tk.Tk):
             CNORM.check_tile_change(int(self.lat.get()), int(self.lon.get()))
             self.cnorm_ref_label.config(
                 text="Réf: " + (CNORM.REFERENCE_TEMP_NAME or CNORM.REFERENCE_DEFAULT_NAME),
-                fg="darkorange" if CNORM.REFERENCE_TEMP else "#e8f0ec")
+                fg="darkorange" if CNORM.REFERENCE_TEMP else _FG)
         except:
             pass
 
@@ -518,6 +549,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         self.poly_curr = None
 
         tk.Toplevel.__init__(self)
+        self.configure(bg=_BG)
         self.protocol("WM_DELETE_WINDOW", self.destroy)
         self.title(tr("Preview / Custom zoomlevels"))
         self.columnconfigure(1, weight=1)
@@ -546,12 +578,12 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
 
         # Frames
         self.frame_left = tk.Frame(
-            self, border=4, relief=RIDGE, bg="#3b5b49"
+            self, border=4, relief=RIDGE, bg=_BG
         )
         self.frame_left.grid(row=0, column=0, sticky=N + S + W + E)
 
         self.frame_right = tk.Frame(
-            self, border=4, relief=RIDGE, bg="#3b5b49"
+            self, border=4, relief=RIDGE, bg=_BG
         )
         self.frame_right.grid(row=0, column=1, sticky=N + S + W + E)
         self.frame_right.rowconfigure(0, weight=1)
@@ -563,14 +595,14 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Preview params "),
-            fg="#a6e3a1",
-            bg="#2a4035",
+            fg=_FG2,
+            bg=_BG,
             font="Helvetica 16 bold italic",
         ).grid(row=row, column=0, sticky=W + E)
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text=tr("Source : "), bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Source : "), bg=_BG, fg=_FG)
         self.map_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.map_choice,
@@ -582,7 +614,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text=tr("Zoomlevel : "), bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Zoomlevel : "), bg=_BG, fg=_FG)
         self.zl_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.zl_choice,
@@ -603,14 +635,14 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Zone params "),
-            fg="#a6e3a1",
-            bg="#2a4035",
+            fg=_FG2,
+            bg=_BG,
             font="Helvetica 16 bold italic",
         ).grid(row=row, column=0, pady=10, sticky=W + E)
         row += 1
 
         tk.Label(
-            self.frame_left, anchor=W, text=tr("Source : "), bg="#3b5b49", fg="#e8f0ec")
+            self.frame_left, anchor=W, text=tr("Source : "), bg=_BG, fg=_FG)
         self.zmap_combo = ttk.Combobox(
             self.frame_left,
             textvariable=self.zmap_choice,
@@ -621,7 +653,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         self.zmap_combo.grid(row=row, column=0, padx=5, pady=10, sticky=E)
         row += 1
 
-        self.frame_zlbtn = tk.Frame(self.frame_left, border=0, bg="#3b5b49")
+        self.frame_zlbtn = tk.Frame(self.frame_left, border=0, bg=_BG)
         for i in range(5):
             self.frame_zlbtn.columnconfigure(i, weight=1)
         self.frame_zlbtn.grid(
@@ -652,13 +684,13 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Approx. Add. Size : "),
-            bg="#3b5b49", fg="#e8f0ec").grid(row=row, column=0, padx=5, pady=10, sticky=W)
+            bg=_BG, fg=_FG).grid(row=row, column=0, padx=5, pady=10, sticky=W)
         tk.Entry(
             self.frame_left,
             width=7,
             justify=RIGHT,
-            bg="#1a2e25",
-            fg="#a6e3a1",
+            bg=_BG,
+            fg=_FG2,
             textvariable=self.gb,
         ).grid(row=row, column=0, padx=5, pady=10, sticky=E)
         row += 1
@@ -684,8 +716,8 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         tk.Label(
             self.frame_left,
             text=tr("Ctrl+B1 : add texture\\nShift+B1: add zone point\\n") + "\nCtrl+B2 : delete zone",
-            bg="#3b5b49",
-            justify=LEFT, fg="#e8f0ec").grid(row=row, column=0, padx=5, pady=20, sticky=N + S + E + W)
+            bg=_BG,
+            justify=LEFT, fg=_FG).grid(row=row, column=0, padx=5, pady=20, sticky=N + S + E + W)
         row += 1
         ttk.Button(
             self.frame_left, text=tr("    Apply    "), command=self.save_zone_list
@@ -701,13 +733,6 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
         self.canvas = tk.Canvas(self.frame_right, bd=0, height=750, width=750)
         self.canvas.grid(row=0, column=0, sticky=N + S + E + W)
-        # ── Thème couleurs ────────────────────────────────────────────
-        try:
-            import O4_Theme_Manager as _TM
-            _TM.apply_to_root(self)
-        except Exception:
-            pass
-
 
     def preview_tile(self, lat, lon):
         # Recharger les zones depuis le .cfg de la tuile
@@ -1245,6 +1270,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
 
     def __init__(self, parent, lat, lon):
         tk.Toplevel.__init__(self)
+        self.configure(bg=_BG)
         self.title(tr("Tiles collection and management"))
         self.columnconfigure(1, weight=1)
         self.rowconfigure(0, weight=1)
@@ -1263,11 +1289,11 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
 
         # Frames
         self.frame_left = tk.Frame(
-            self, border=4, relief=RIDGE, bg="#3b5b49"
+            self, border=4, relief=RIDGE, bg=_BG
         )
         self.frame_left.grid(row=0, column=0, sticky=N + S + W + E)
         self.frame_right = tk.Frame(
-            self, border=4, relief=RIDGE, bg="#3b5b49"
+            self, border=4, relief=RIDGE, bg=_BG
         )
         self.frame_right.grid(row=0, rowspan=60, column=1, sticky=N + S + W + E)
         self.frame_right.rowconfigure(0, weight=1, minsize=self.canvas_min_y)
@@ -1279,16 +1305,16 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Active tile"),
-            fg="#a6e3a1",
-            bg="#2a4035",
+            fg=_FG2,
+            bg=_BG,
             font="Helvetica 16 bold italic",
         ).grid(row=row, column=0, sticky=W + E)
         row += 1
         self.latlon_entry = tk.Entry(
             self.frame_left,
             width=8,
-            bg="#1a2e25",
-            fg="#a6e3a1",
+            bg=_BG,
+            fg=_FG2,
             textvariable=self.latlon,
         )
         self.latlon_entry.grid(row=row, column=0, padx=5, pady=5, sticky=N + S)
@@ -1298,8 +1324,8 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Erase cached data"),
-            fg="#a6e3a1",
-            bg="#2a4035",
+            fg=_FG2,
+            bg=_BG,
             font="Helvetica 16 bold italic",
         ).grid(row=row, column=0, sticky=W + E)
         row += 1
@@ -1309,10 +1335,10 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
                 text=tr(item),
                 anchor=W,
                 variable=self.v_[item],
-                bg="#3b5b49",
-                fg="#e8f0ec",
-                selectcolor="#2a4035",
-                activebackground="#3b5b49",
+                bg=_BG,
+                fg=_FG,
+                selectcolor=_BG,
+                activebackground=_BG,
                 activeforeground="#ffffff",
                 highlightthickness=0,
             ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
@@ -1326,8 +1352,8 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.frame_left,
             anchor=W,
             text=tr("Batch build tiles"),
-            fg="#a6e3a1",
-            bg="#2a4035",
+            fg=_FG2,
+            bg=_BG,
             font="Helvetica 16 bold italic",
         ).grid(row=row, column=0, sticky=W + E)
         row += 1
@@ -1337,10 +1363,10 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
                 text=tr(item),
                 anchor=W,
                 variable=self.v_[item],
-                bg="#3b5b49",
-                fg="#e8f0ec",
-                selectcolor="#2a4035",
-                activebackground="#3b5b49",
+                bg=_BG,
+                fg=_FG,
+                selectcolor=_BG,
+                activebackground=_BG,
                 activeforeground="#ffffff",
                 highlightthickness=0,
             ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
@@ -1365,7 +1391,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
                   + tr("B2-press+hold=move map") + "\n"
                   + "B1-double-click=select active\n"
                   + "Shift+B1=add to batch build\nCtrl+B1=link in Custom Scenery"),
-            bg="#3b5b49", fg="#e8f0ec").grid(row=row, column=0, padx=0, pady=5, sticky=N + S + E + W)
+            bg=_BG, fg=_FG).grid(row=row, column=0, padx=0, pady=5, sticky=N + S + E + W)
         row += 1
 
         self.canvas = tk.Canvas(self.frame_right, bd=0)
@@ -1413,12 +1439,6 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             x0, y0, x1, y1, fill="", outline="yellow", width=3
         )
         self.threaded_preview()
-        # ── Thème couleurs ────────────────────────────────────────────
-        try:
-            import O4_Theme_Manager as _TM
-            _TM.apply_to_root(self)
-        except Exception:
-            pass
         return
 
     def set_working_dir(self):
@@ -1445,7 +1465,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             13: "#1e3028",
             14: "#1e3028",
             15: "cyan",
-            16: "#50fa7b",
+            16: _CON_FG,
             17: "yellow",
             18: "orange",
             19: "red",
@@ -2029,15 +2049,16 @@ class Ortho4XP_Simulator(tk.Toplevel):
 
     BG       = "#1a2a20"
     BG2      = "#22342a"
-    BG3      = "#2a4035"
-    FG       = "#e8f0ec"
-    FG2      = "#a6e3a1"
+    BG3      = _BG
+    FG       = _FG
+    FG2      = _FG2
     FG3      = "#607d6b"
     TROUGH   = "#0d1f17"
     ACC      = "#4fc3f7"
 
     def __init__(self, parent, lat, lon, custom_build_dir=""):
         tk.Toplevel.__init__(self, parent)
+        self.configure(bg=_BG)
         self.parent = parent
         self.lat = lat
         self.lon = lon
@@ -2055,13 +2076,6 @@ class Ortho4XP_Simulator(tk.Toplevel):
         self._build_ui()
         self._load_values()
         self._anim_loop()
-        # ── Thème couleurs ────────────────────────────────────────────
-        try:
-            import O4_Theme_Manager as _TM
-            _TM.apply_to_root(self)
-        except Exception:
-            pass
-
 
     def _on_close(self):
         self._anim_running = False
@@ -2134,9 +2148,9 @@ class Ortho4XP_Simulator(tk.Toplevel):
         frame.rowconfigure(1, weight=1)  # curseurs extensibles
 
         # Canvas en haut — pleine largeur
-        cv_frame = tk.Frame(frame, bg="#0a1628", relief="flat", bd=1)
+        cv_frame = tk.Frame(frame, bg=_CON_BG, relief="flat", bd=1)
         cv_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(8,4))
-        cv = tk.Canvas(cv_frame, bg="#0a1628",
+        cv = tk.Canvas(cv_frame, bg=_CON_BG,
             highlightthickness=0, height=canvas_height)
         cv.pack(fill="both", expand=True)
         # Forcer redraw quand le canvas est redimensionné
