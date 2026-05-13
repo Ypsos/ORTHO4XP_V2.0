@@ -19,6 +19,19 @@ SHADOW_COLOR  = "#2a4235"
 BASE_DIR = Path(os.path.dirname(os.path.realpath(__file__))).resolve()
 SYSTEM   = platform.system()
 
+# ── Chargement du thème sauvegardé — avant création des widgets ──────────────
+try:
+    sys.path.insert(0, str(BASE_DIR / "src"))
+    import O4_Theme_Manager as _TM_BOOT
+    _t = _TM_BOOT.get_theme()
+    BG_GLOBAL    = _t.get("bg",         BG_GLOBAL)
+    BTN_COLOR    = _t.get("btn_bg",     BTN_COLOR)
+    BTN_TEXT     = _t.get("btn_fg",     BTN_TEXT)
+    SHADOW_COLOR = _t.get("shadow",     SHADOW_COLOR)
+except Exception:
+    pass  # si absent → couleurs Roland par défaut
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ── Traduction bilingue ──────────────────────────────────────────────────────
 sys.path.insert(0, str(BASE_DIR / "src"))
 try:
@@ -35,7 +48,7 @@ except Exception:
     def tr(k): return k   # fallback si O4_Lang absent
 
 # ── Vérification nom de dossier GitHub ──────────────────────────────────────
-# GitHub crée automatiquement un double nom : ORTHO4XP-V2-ORTHO4XP_V2
+# GitHub crée automatiquement un double nom : ORTHO4XP-V3-ORTHO4XP_V3
 # Le lanceur fonctionne quand même, mais on avertit l'utilisateur pour éviter
 # toute confusion future (chemins longs, scripts externes, etc.)
 def _check_folder_name():
@@ -196,41 +209,146 @@ class Launcher(tk.Tk):
 
     # ── Gestion du thème ──────────────────────────────────────────────────
     def _apply_theme(self, theme_name=None):
-        """Applique le thème sélectionné à toute la fenêtre."""
+        """Sauvegarde le thème et redémarre le Launcher pour l'appliquer complètement."""
         if not self._tm:
             return
         name = theme_name or self._theme_var.get()
         if self._tm.set_theme(name):
-            t = self._tm.get_theme()
-            self._repaint(self, t)
-            self._log(f"🎨 Thème appliqué : {name}")
+            # Redémarrage propre — recrée tous les widgets avec les bonnes couleurs
+            self.after(200, self._restart)
 
+    def _restart(self):
+        """Redémarre le Launcher avec le nouveau thème — Mac/Linux/Windows."""
+        if SYSTEM == "Windows":
+            python = str(BASE_DIR / "venv" / "Scripts" / "python.exe")
+        else:
+            python = str(BASE_DIR / "venv" / "bin" / "python3")
+        launcher = str(BASE_DIR / "Ortho4XP_Launcher.py")
+        subprocess.Popen([python, launcher])
+        self.destroy()
+#####------------###
     def _apply_theme_btn(self):
-        """Bouton palette — applique le thème actuel sélectionné."""
-        self._apply_theme(self._theme_var.get())
+        """Bouton palette 🎨 → Ouvre l'éditeur complet"""
+        if not self._tm:
+            self._log("❌ O4_Theme_Manager non chargé.")
+            return
 
-    def _repaint(self, widget, t):
-        """Repeint récursivement tous les widgets avec le thème."""
         try:
-            wclass = widget.winfo_class()
-            if wclass in ("Frame", "Toplevel"):
-                widget.configure(bg=t["bg"])
-            elif wclass == "Label":
-                widget.configure(bg=t["bg"], fg=t["fg_secondary"])
-            elif wclass == "Text":
-                widget.configure(bg=t["console_bg"], fg=t["console_fg"])
-            elif wclass == "Button":
-                widget.configure(bg=t["btn_bg"], fg=t["btn_fg"],
-                                 activebackground=t["btn_hover"])
-            elif wclass == "OptionMenu":
-                widget.configure(bg=t["bg"], fg=t["fg_secondary"])
-        except Exception:
-            pass
+            if self._theme_var.get() != "custom":
+                self._tm.set_theme("custom")
+                self._log("✅ Passage sur thème 'custom'")
+            self._open_custom_theme_editor_window()
+        except Exception as e:
+            self._log(f"❌ Erreur : {e}")
+
+    def _open_custom_theme_editor_window(self):
+        """Éditeur complet avec TOUTES les couleurs demandées"""
+        win = tk.Toplevel(self)
+        win.title("🎨 Éditeur Thème Custom Complet")
+        win.configure(bg=BG_GLOBAL)
+        win.geometry("820x950")
+        win.resizable(True, True)
+
+        tk.Label(win, text="🎨 Éditeur Thème Custom - Toutes les couleurs", 
+                 font=("Helvetica", 18, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=10)
+
+        theme_dict = self._tm.get_custom_theme()
+        self._editor_vars = {}
+
+        keys_to_edit = [
+            "bg", "bg_secondary", "fg", "fg_secondary",
+            "btn_bg", "btn_fg", "btn_hover", "btn_active",
+            "console_bg", "console_fg", "accent",
+            "warning", "error", "success", "canvas_bg",
+            "border", "shadow"
+        ]
+
+        for key in keys_to_edit:
+            frame = tk.Frame(win, bg=BG_GLOBAL)
+            frame.pack(fill="x", padx=25, pady=6)
+
+            # Nom de la couleur
+            tk.Label(frame, text=f"{key:<13}", width=15, anchor="w",
+                     bg=BG_GLOBAL, fg="#a6e3a1", font=("Helvetica", 11, "bold")).pack(side="left")
+
+            color = theme_dict.get(key, "#3b5b49")
+            r = int(color[1:3], 16)
+
+            var_hex = tk.StringVar(value=color)
+            var_slider = tk.IntVar(value=r)
+
+            self._editor_vars[key] = {
+                "hex": var_hex,
+                "slider": var_slider,
+                "preview": None
+            }
+
+            # Champ Hex
+            tk.Entry(frame, textvariable=var_hex, width=9, font=("Courier", 12),
+                     bg="#2a4235", fg="white").pack(side="left", padx=8)
+
+            # Curseur
+            tk.Scale(frame, from_=0, to=255, variable=var_slider, orient="horizontal",
+                     length=280, bg=BG_GLOBAL, fg="#a6e3a1", troughcolor="#1e2a24",
+                     command=lambda v, k=key: self._live_update_color(k)).pack(side="left", padx=8)
+
+            # Preview visuel (rectangle couleur)
+            preview = tk.Label(frame, text="        ", bg=color, width=9, height=2,
+                              relief="solid", bd=3)
+            preview.pack(side="left", padx=12)
+            self._editor_vars[key]["preview"] = preview
+
+        # Boutons du bas
+        btn_frame = tk.Frame(win, bg=BG_GLOBAL)
+        btn_frame.pack(pady=25)
+
+        tk.Button(btn_frame, text="💾 Sauvegarder & Appliquer", 
+                  bg="#4a6b59", fg="white", font=("Helvetica", 13, "bold"),
+                  padx=20, pady=12,
+                  command=lambda: self._save_custom_colors(win)).pack(side="left", padx=15)
+
+        tk.Button(btn_frame, text="🔄 Réinitialiser Roland", 
+                  bg="#2a4235", fg="#a6e3a1", font=("Helvetica", 12, "bold"),
+                  command=lambda: self._reset_custom_theme(win)).pack(side="left", padx=15)
+
+        tk.Button(btn_frame, text="Annuler", bg="#a6e3a1", fg="black",
+                  font=("Helvetica", 12, "bold"), padx=20, pady=12,
+                  command=win.destroy).pack(side="left", padx=15)
+
+        self._log("🎨 Éditeur complet ouvert avec toutes les couleurs.")
+
+    def _live_update_color(self, key):
+        """Mise à jour visuelle en direct"""
         try:
-            for child in widget.winfo_children():
-                self._repaint(child, t)
-        except Exception:
+            r = self._editor_vars[key]["slider"].get()
+            new_color = f"#{r:02x}{r:02x}{r:02x}"
+            self._editor_vars[key]["hex"].set(new_color)
+            self._editor_vars[key]["preview"].config(bg=new_color)
+        except:
             pass
+
+    def _save_custom_colors(self, win):
+        """Sauvegarde toutes les couleurs"""
+        try:
+            for key in self._editor_vars:
+                color = self._editor_vars[key]["hex"].get().strip().upper()
+                if color.startswith("#") and len(color) in (4, 7):
+                    self._tm.set_custom_color(key, color)
+            
+            self._log("✅ Toutes les couleurs ont été sauvegardées !")
+            win.destroy()
+            self.after(1000, self._restart)   # Redémarrage pour appliquer partout
+        except Exception as e:
+            self._log(f"❌ Erreur sauvegarde : {e}")
+
+    def _reset_custom_theme(self, win):
+        if hasattr(self._tm, "reset_custom_to_roland"):
+            self._tm.reset_custom_to_roland()
+        self._log("🔄 Thème custom réinitialisé aux couleurs Roland.")
+        win.destroy()
+        self.after(800, self._restart)
+
+####*------         
 
     # ── Callbacks tile_change / update_cfg ────────────────────────────────
     def _log(self, msg):
@@ -573,7 +691,7 @@ int main(int argc, char **argv) {
         sh.chmod(sh.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
         desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
-            f"[Desktop Entry]\nVersion=2.0\nName=ORTHO4XP V2 Lanceur\n"
+            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V3 Lanceur\n"
             f"Exec={sh}\nPath={BASE_DIR}\nTerminal=false\nType=Application\n",
             encoding="utf-8")
         desktop.chmod(desktop.stat().st_mode | st.S_IEXEC | st.S_IXGRP | st.S_IXOTH)
@@ -646,7 +764,7 @@ exec "./venv/bin/python3" "Ortho4XP_Launcher.py"
 
         desktop = BASE_DIR / "Lanceur ORTHO4XP.desktop"
         desktop.write_text(
-            f"[Desktop Entry]\nVersion=2.0\nName=ORTHO4XP V2 Lanceur\n"
+            f"[Desktop Entry]\nVersion=3.0\nName=ORTHO4XP V3 Lanceur\n"
             f"Exec={sh_path}\nPath={BASE_DIR}\n"
             f"Terminal=false\nType=Application\nCategories=Utility;\n",
             encoding="utf-8")
