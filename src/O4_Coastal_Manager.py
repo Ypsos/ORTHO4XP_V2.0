@@ -46,6 +46,7 @@ import math
 import numpy as np
 from PIL import Image, ImageFilter
 from pathlib import Path
+from O4_Lang import tr
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PARAMÈTRES DU POST-TRAITEMENT CÔTIER
@@ -437,12 +438,12 @@ def build_coastal_info_panel(parent_frame):
         import threading
 
         fr = tk.LabelFrame(parent_frame,
-            text="🌊 Zone maritime : bord de côtes et d'iles : dégradé automatique.",
+            text=tr("🌊 Zone maritime : bord de côtes et d'iles : dégradé automatique."),
              bg="#3b5b49",
             fg="#4488ff", font=("Arial", 10, "bold"), padx=4, pady=4)
         fr.pack(fill="x", padx=6, pady=(4, 0))
 
-        lbl = tk.Label(fr, text="Analyse…", font=("Arial", 9), fg="#aaaaaa")
+        lbl = tk.Label(fr, text=tr("Analyse…"), font=("Arial", 9), fg="#aaaaaa")
         lbl.pack(anchor="w")
         lb = tk.Listbox(fr, height=4, font=("Courier", 9),
                         bg="#1a1a2e", fg="#88ccff",
@@ -485,7 +486,7 @@ def build_coastal_info_panel(parent_frame):
             lb.delete(0, "end")
             if not found:
                 lb.insert("end", "  Aucune tuile côtière détectée")
-                lbl.config(text="Aucune tuile côtière dans Masks/")
+                lbl.config(text=tr("Aucune tuile côtière dans Masks/"))
             else:
                 for t in found:
                     icon = "🏝" if t["has_islands"] else "🌊"

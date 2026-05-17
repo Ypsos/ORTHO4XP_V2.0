@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Optional
+from O4_Lang import tr
 
 # Détection OS — même logique que O4_Imagery_Utils.py
 if "dar" in sys.platform:

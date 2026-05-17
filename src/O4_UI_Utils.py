@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+from O4_Lang import tr
 
 Ortho4XP_dir = ".." if getattr(sys, "frozen", False) else "."
 verbosity = 1

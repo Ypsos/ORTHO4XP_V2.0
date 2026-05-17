@@ -129,17 +129,17 @@ T = {
     "📋 Exporter liste"                 : "📋 Exporter liste",
     "🎨 Appliquer au groupe"            : "🎨 Appliquer au groupe",
     "💾 Générer .comb"                  : "💾 Générer .comb",
-    "👁 Batch Preview couche"           : "👁 Batch Preview couche",
+    "👁 Batch Preview couche"           : "👁 Aperçu lot couche",
     "🗑 Supprimer DDS sélect."          : "🗑 Supprimer DDS sélect.",
     "🎯 Auto-détecter"                  : "🎯 Auto-détecter",
     "↺ Reset curseurs"                  : "↺ Reset curseurs",
     "🔬 Auto depuis Cible"              : "🔬 Auto depuis Cible",
     "🔨 Build avec dégradé (toute la tuile)"
-                                        : "🔨 Build avec dégradé (toute la tuile)",
-    "🔨 Lancer Build (groupe)"          : "🔨 Lancer Build (groupe)",
-    "👁 Preview dégradé (avant Build)"  : "👁 Preview dégradé (avant Build)",
+                                        : "🔨 Construire avec dégradé (tuile entière)",
+    "🔨 Lancer Build (groupe)"          : "🔨 Lancer construction (groupe)",
+    "👁 Preview dégradé (avant Build)"  : "👁 Aperçu dégradé (avant construction)",
     "🛡 Générer .comb seam (zone protégée)"
-                                        : "🛡 Générer .comb seam (zone protégée)",
+                                        : "🛡 Générer .comb jointure (zone protégée)",
     "💾 Archiver"                       : "💾 Archiver",
     "📂 Restaurer"                      : "📂 Restaurer",
     "↺ Reset zoom"                      : "↺ Reset zoom",
@@ -202,7 +202,7 @@ T = {
     "Annuler"                           : "Annuler",
     "Fermer"                            : "Fermer",
     "💡 Seam persistante : augmentez le rayon\\n"
-                                        : "💡 Seam persistante : augmentez le rayon\\n",
+                                        : "💡 Jointure persistante : augmentez le rayon\\n",
 
     # ── COASTAL MANAGER UI ─────────────────────────────────────────
     "🌊 Zone maritime : bord de côtes et d'iles : dégradé automatique."
@@ -337,5 +337,22 @@ T = {
                                             : "Tout s'installe dans venv/ — rien dans le système",
     "Créer le lanceur Ortho4XP (double-clic quotidien)"
                                             : "Créer le lanceur Ortho4XP (double-clic quotidien)",
+
+    # ── LABELS TECHNIQUES GUI (format DDS, référence couleur) ──────
+    "Réf: Calibré_48753_JPG_Europe"     : "Réf : Calibré_48753_JPG_Europe",
+    "BC1 — TERRE"                       : "BC1 — TERRE",
+    "BC1 — MER"                         : "BC1 — MER",
+    "BC3 — MER"                         : "BC3 — MER",
+
+    # ── COLOR CHECK — boutons et labels dynamiques ─────────────────
+    "🗑 Supprimer TOUS DDS ZL"          : "🗑 Supprimer TOUS DDS ZL",
+    "Gradient: {radius} px — next Build"     : "Dégradé : {radius} px — prochain Build",
+    "Checker gradient: {radius} px — applies to all DDS at next Build"
+                                        : "Dégradé damier : {radius} px — s'applique à tous les DDS au prochain Build",
+    "  Effective radii (base {base}px):" : "  Rayons effectifs (base {base}px) :",
+    "💡 Persistent seam: increase radius\n   or generate a .comb mask on the area."
+                                        : "💡 Seam persistante : augmentez le rayon\n   ou générez un masque .comb sur la zone.",
+    "⚠ too low"                         : "⚠ trop faible",
+    "⚠ detail risk"                     : "⚠ risque détails",
 
 }

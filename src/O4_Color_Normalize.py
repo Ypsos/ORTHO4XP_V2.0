@@ -58,6 +58,7 @@ import json
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
 import math
+from O4_Lang import tr
 
 # ─────────────────────────────────────────────────────────────────────────
 # ZONEPHOTO.COMB — Lecture des couches, extends, filtres, priorités

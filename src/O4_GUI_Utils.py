@@ -285,7 +285,7 @@ class Ortho4XP_GUI(tk.Tk):
         self.cnorm_pct_label.grid(row=0, column=4, padx=6, sticky=W)
 
         self.cnorm_ref_label = tk.Label(self.frame_cnorm,
-            text="Réf: Calibré_48753_JPG_Europe",
+            text=tr("Réf: Calibré_48753_JPG_Europe"),
             bg=_BG, fg=_FG2,
             font=("TkFixedFont", fs(11), "bold"))
         self.cnorm_ref_label.grid(row=0, column=5, padx=10, sticky=W+E)
@@ -2947,10 +2947,10 @@ class Ortho4XP_Simulator(tk.Toplevel):
 
             # ── Labels ─────────────────────────────────────────────
             cv.create_text(W//2, H_T//2,
-                           text="BC1 — TERRE",
+                           text=tr("BC1 — TERRE"),
                            fill="#ccffcc", font=("TkFixedFont", 9, "bold"))
             cv.create_text(W//2, SPLIT + H_M//2,
-                           text=("BC3 — MER" if imp=="True" else "BC1 — MER"),
+                           text=(tr("BC3 — MER") if imp=="True" else tr("BC1 — MER")),
                            fill="#88ddff", font=("TkFixedFont", 9, "bold"))
 
             # Indicateur dégradé

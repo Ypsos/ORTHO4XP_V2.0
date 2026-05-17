@@ -72,6 +72,7 @@ from tkinter import RIDGE, LEFT, RIGHT, HORIZONTAL, END, messagebox
 import tkinter.ttk as ttk
 import numpy as np
 from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+from O4_Lang import tr
 
 CORRECTIONS_FILE = "color_corrections.ccorr"
 COMB_EXT         = ".comb"   # extension des fichiers générés par Color Check
@@ -454,7 +455,7 @@ class ColorCheckWindow(tk.Toplevel):
             if self.all_dds_list:
                 info = self.all_dds_list[0]
             else:
-                self.status.config(text="⚠ Aucun DDS disponible pour le preview.")
+                self.status.config(text=tr("⚠ Aucun DDS disponible pour le preview."))
                 return
         else:
             info = self.selected_dds_info
@@ -475,14 +476,14 @@ class ColorCheckWindow(tk.Toplevel):
         except Exception:
             pass
         if radius == 0:
-            self.lbl_feather.config(text="Dégradé : OFF", fg="#aaaaaa")
-            self.status.config(text="Dégradé de jointure : désactivé (jointure nette)")
+            self.lbl_feather.config(text=tr("Dégradé : OFF"), fg="#aaaaaa")
+            self.status.config(text=tr("Dégradé de jointure : désactivé (jointure nette)"))
         else:
             self.lbl_feather.config(
-                text=f"Dégradé : {radius} px — prochain Build",
+                text=tr("Gradient: {radius} px — next Build").format(radius=radius),
                 fg="#ffdd88")
             self.status.config(
-                text=f"Dégradé damier : {radius} px — s'applique à tous les DDS au prochain Build")
+                text=tr("Checker gradient: {radius} px — applies to all DDS at next Build").format(radius=radius))
         self._update_zl_radii_display()
 
     def _update_zl_radii_display(self):
@@ -496,16 +497,16 @@ class ColorCheckWindow(tk.Toplevel):
             import O4_Color_Normalize as CNORM
             base = CNORM.feathering_mask_radius
             if base == 0:
-                self._lbl_zl_radii.config(text="  Rayons effectifs : dégradé OFF")
+                self._lbl_zl_radii.config(text=tr("  Rayons effectifs : dégradé OFF"))
                 return
-            lines = [f"  Rayons effectifs (base {base}px) :"]
+            lines = [tr("  Effective radii (base {base}px):").format(base=base)]
             for zl in (13, 14, 15, 16, 17, 18, 19, 20):
                 r = CNORM.get_effective_feather_radius(zl)
                 note = ""
                 if zl <= 16 and r < 24:
-                    note = " ⚠ trop faible"
+                    note = " " + tr("⚠ too low")
                 elif zl >= 18 and r > 40:
-                    note = " ⚠ risque détails"
+                    note = " " + tr("⚠ detail risk")
                 lines.append(f"    ZL{zl} → {r} px{note}")
             self._lbl_zl_radii.config(text="\n".join(lines))
         except Exception:
@@ -528,7 +529,7 @@ class ColorCheckWindow(tk.Toplevel):
             if self.all_dds_list:
                 info = self.all_dds_list[0]
             else:
-                self.status.config(text="⚠ Aucun DDS sélectionné pour générer le .comb seam.")
+                self.status.config(text=tr("⚠ Aucun DDS sélectionné pour générer le .comb seam."))
                 return
         else:
             info = self.selected_dds_info
@@ -697,7 +698,7 @@ class ColorCheckWindow(tk.Toplevel):
         T  = self._thumb
         sl = int(210 * s)
 
-        tk.Label(self, text="Corrections R.G.B., Netteté, saturation, Zone de fusion",
+        tk.Label(self, text=tr("Corrections R.G.B., Netteté, saturation, Zone de fusion"),
                  bg="#3b5b49", fg="light green",
                  font=("TkFixedFont", fs(13), "bold")).pack(fill=tk.X, padx=10, pady=(8, 2))
 
@@ -713,7 +714,7 @@ class ColorCheckWindow(tk.Toplevel):
         left = tk.Frame(mid, bg="#3b5b49", relief=RIDGE, bd=2)
         left.pack(side=LEFT, fill=tk.Y, padx=(0, 8))
 
-        tk.Label(left, text="Couches ZL / Tuiles (toutes)", bg="#3b5b49", fg="light green",
+        tk.Label(left, text=tr("Couches ZL / Tuiles (toutes)"), bg="#3b5b49", fg="light green",
                  font=("TkFixedFont", fs(10), "bold")).pack(pady=(6, 2))
 
         # Champ de recherche gauche
@@ -741,7 +742,7 @@ class ColorCheckWindow(tk.Toplevel):
         self.listbox_layers.bind("<Double-Button-1>",  self._on_dbl_click_layer)
 
         # Boutons section gauche
-        tk.Label(left, text="① Couches / Corrections",
+        tk.Label(left, text=tr("① Couches / Corrections"),
                  bg="#3b5b49", fg="light green",
                  font=("TkFixedFont", fs(9), "bold")).pack(pady=(6, 1))
 
@@ -754,38 +755,38 @@ class ColorCheckWindow(tk.Toplevel):
             ("🗑 Supprimer DDS sélect.",   self._delete_one),
             ("🗑 Supprimer TOUS DDS ZL",   self._delete_all),
         ]:
-            ttk.Button(left, text=text, command=cmd).pack(fill=tk.X, padx=6, pady=2)
+            ttk.Button(left, text=tr(text), command=cmd).pack(fill=tk.X, padx=6, pady=2)
 
-        self.btn_build = ttk.Button(left, text="🔨 Lancer Build (groupe)",
+        self.btn_build = ttk.Button(left, text=tr("🔨 Lancer Build (groupe)"),
                                     command=self._launch_build, state="disabled")
         self.btn_build.pack(fill=tk.X, padx=6, pady=2)
 
         # Archive .ccorr
         tk.Frame(left, bg="#555555", height=1).pack(fill=tk.X, padx=6, pady=(10, 2))
-        tk.Label(left, text="Archive corrections (Color_check/)",
+        tk.Label(left, text=tr("Archive corrections (Color_check/)"),
                  bg="#3b5b49", fg="#aaaaaa",
                  font=("TkFixedFont", fs(8))).pack()
         _bf = tk.Frame(left, bg="#3b5b49")
         _bf.pack(fill=tk.X, padx=6, pady=(2, 4))
-        ttk.Button(_bf, text="💾 Archiver",
+        ttk.Button(_bf, text=tr("💾 Archiver"),
                    command=self._archive_corrections).pack(
                    side=LEFT, fill=tk.X, expand=True, padx=(0, 2))
-        ttk.Button(_bf, text="📂 Restaurer",
+        ttk.Button(_bf, text=tr("📂 Restaurer"),
                    command=self._restore_corrections).pack(
                    side=LEFT, fill=tk.X, expand=True, padx=(2, 0))
 
         # Section dégradé
         tk.Frame(left, bg="#555555", height=2).pack(fill=tk.X, padx=6, pady=(6, 4))
-        tk.Label(left, text="② Dégradé de jointure sources",
+        tk.Label(left, text=tr("② Dégradé de jointure sources"),
                  bg="#3b5b49", fg="#ffdd88",
                  font=("TkFixedFont", fs(9), "bold")).pack(pady=(0, 2))
-        tk.Label(left, text="(damier progressif — toute la tuile)",
+        tk.Label(left, text=tr("(damier progressif — toute la tuile)"),
                  bg="#3b5b49", fg="#888888",
                  font=("TkFixedFont", fs(7))).pack()
 
         self._feather_var = tk.StringVar(value="0")
 
-        self.lbl_feather = tk.Label(left, text="Dégradé : OFF",
+        self.lbl_feather = tk.Label(left, text=tr("Dégradé : OFF"),
                                     bg="#3b5b49", fg="#aaaaaa",
                                     font=("TkFixedFont", fs(8)))
         self.lbl_feather.pack(pady=(3, 2))
@@ -799,19 +800,18 @@ class ColorCheckWindow(tk.Toplevel):
         self.after(200, self._update_zl_radii_display)
 
         # Conseils seam persistante
-        tk.Label(left, text="💡 Seam persistante : augmentez le rayon\n"
-                             "   ou générez un masque .comb sur la zone.",
+        tk.Label(left, text=tr("💡 Persistent seam: increase radius\n   or generate a .comb mask on the area."),
                  bg="#3b5b49", fg="#aaaaaa",
                  font=("TkFixedFont", fs(7)), justify="left").pack(
                  fill=tk.X, padx=8, pady=(0, 4))
 
         ttk.Button(
-            left, text="👁 Preview dégradé (avant Build)",
+            left, text=tr("👁 Preview dégradé (avant Build)"),
             command=self._open_fusion_preview,
         ).pack(fill=tk.X, padx=6, pady=(0, 2))
 
         ttk.Button(
-            left, text="🛡 Générer .comb seam (zone protégée)",
+            left, text=tr("🛡 Générer .comb seam (zone protégée)"),
             command=self._generate_seam_comb,
         ).pack(fill=tk.X, padx=6, pady=(0, 8))
 
@@ -858,7 +858,7 @@ class ColorCheckWindow(tk.Toplevel):
         right = tk.Frame(mid, bg="#3b5b49", relief=RIDGE, bd=2)
         right.pack(side=LEFT, fill=tk.Y, padx=(8, 0))
 
-        tk.Label(right, text="Couleur Cible — extends / ZL",
+        tk.Label(right, text=tr("Couleur Cible — extends / ZL"),
                  bg="#3b5b49", fg="light blue",
                  font=("TkFixedFont", fs(10), "bold")).pack(pady=(6, 2))
 
@@ -886,7 +886,7 @@ class ColorCheckWindow(tk.Toplevel):
         self.listbox_target.bind("<<ListboxSelect>>", self._on_select_target)
 
         # Curseurs
-        sf = tk.LabelFrame(center, text="Correction sRGB par canal + Saturation",
+        sf = tk.LabelFrame(center, text=tr("Correction sRGB par canal + Saturation"),
                            bg="#3b5b49", fg="yellow",
                            font=("TkFixedFont", fs(10), "bold"))
         sf.pack(fill=tk.X, padx=6, pady=8)
@@ -931,12 +931,12 @@ class ColorCheckWindow(tk.Toplevel):
                      command=self._on_slider_change).pack(side=LEFT)
 
         # Netteté
-        nf = tk.LabelFrame(center, text="Netteté", bg="#3b5b49", fg="yellow",
+        nf = tk.LabelFrame(center, text=tr("Netteté"), bg="#3b5b49", fg="yellow",
                            font=("TkFixedFont", fs(10), "bold"))
         nf.pack(fill=tk.X, padx=6, pady=4)
         fn = tk.Frame(nf, bg="#3b5b49")
         fn.pack(padx=8, pady=3, anchor="w")
-        tk.Label(fn, text="Netteté", bg="#3b5b49", fg="white",
+        tk.Label(fn, text=tr("Netteté"), bg="#3b5b49", fg="white",
                  font=("TkFixedFont", fs(10)), width=8, anchor="e").pack(side=LEFT)
         tk.Scale(fn, from_=0, to=300, orient=HORIZONTAL, variable=self.var_sharp,
                  bg="#3b5b49", fg="white", troughcolor="#003300", length=sl,
@@ -946,9 +946,9 @@ class ColorCheckWindow(tk.Toplevel):
         # Boutons d'action
         cb = tk.Frame(center, bg="#3b5b49")
         cb.pack(fill=tk.X, padx=6, pady=6)
-        ttk.Button(cb, text="🎯 Auto-détecter",    command=self._auto_detect).pack(side=LEFT, padx=4)
-        ttk.Button(cb, text="↺ Reset curseurs",    command=self._reset_sliders).pack(side=LEFT, padx=4)
-        ttk.Button(cb, text="🔬 Auto depuis Cible", command=self._auto_from_target).pack(side=LEFT, padx=4)
+        ttk.Button(cb, text=tr("🎯 Auto-détecter"),    command=self._auto_detect).pack(side=LEFT, padx=4)
+        ttk.Button(cb, text=tr("↺ Reset curseurs"),    command=self._reset_sliders).pack(side=LEFT, padx=4)
+        ttk.Button(cb, text=tr("🔬 Auto depuis Cible"), command=self._auto_from_target).pack(side=LEFT, padx=4)
 
         # ── Panneau Côtes & Îles (O4_Coastal_Manager) ─────────────────────
         try:
@@ -958,7 +958,7 @@ class ColorCheckWindow(tk.Toplevel):
             pass
         # ──────────────────────────────────────────────────────────────────
 
-        self.status = tk.Label(self, text="En attente…",
+        self.status = tk.Label(self, text=tr("En attente…"),
                                bg="black", fg="light green",
                                font=("TkFixedFont", fs(10)), anchor="w")
         self.status.pack(fill=tk.X, padx=6, pady=(4, 8))
@@ -1012,7 +1012,7 @@ class ColorCheckWindow(tk.Toplevel):
             return
 
         self.lbl_path.config(fg="#aaffaa")
-        self.status.config(text="Scan en cours…")
+        self.status.config(text=tr("Scan en cours…"))
         self.listbox_layers.delete(0, END)
         self.listbox_target.delete(0, END)
         self.layer_groups      = {}
@@ -1415,7 +1415,7 @@ class ColorCheckWindow(tk.Toplevel):
 
     def _auto_detect(self):
         if not self.selected_dds_info:
-            self.status.config(text="⚠ Sélectionnez d'abord un DDS.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord un DDS."))
             return
         info   = self.selected_dds_info
         d, pt  = info["dominant"], round(info["delta"])
@@ -1428,7 +1428,7 @@ class ColorCheckWindow(tk.Toplevel):
 
     def _auto_from_target(self):
         if not self.selected_dds_info or self.target_idx is None:
-            self.status.config(text="⚠ Sélectionnez un DDS à gauche ET une cible à droite.")
+            self.status.config(text=tr("⚠ Sélectionnez un DDS à gauche ET une cible à droite."))
             return
         if not self.preview_orig or not self.preview_target:
             return
@@ -1468,7 +1468,7 @@ class ColorCheckWindow(tk.Toplevel):
         Sauvegarde dans .ccorr pour chaque fichier du groupe.
         """
         if not self.selected_group:
-            self.status.config(text="⚠ Sélectionnez d'abord une couche ZL ou un fichier.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord une couche ZL ou un fichier."))
             return
 
         entry = {
@@ -1483,7 +1483,7 @@ class ColorCheckWindow(tk.Toplevel):
         vals = [entry[k] for k in entry if k != "strength"]
         if all(v == 0 for v in vals):
             self.status.config(
-                text="⚠ Tous les curseurs sont à 0 — ajustez au moins un curseur.")
+                text=tr("⚠ Tous les curseurs sont à 0 — ajustez au moins un curseur."))
             return
 
         corrections = load_corrections(self.textures_dir)
@@ -1523,7 +1523,7 @@ class ColorCheckWindow(tk.Toplevel):
         Si plusieurs fichiers dans le groupe → applique les mêmes zones à tous.
         """
         if not self.selected_group:
-            self.status.config(text="⚠ Sélectionnez d'abord une couche ZL ou un fichier.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord une couche ZL ou un fichier."))
             return
 
         # DDS de référence pour l'éditeur visuel
@@ -1532,7 +1532,7 @@ class ColorCheckWindow(tk.Toplevel):
             files = self.selected_group.get("files", [])
             info  = files[0] if files else None
         if not info:
-            self.status.config(text="⚠ Aucun DDS disponible.")
+            self.status.config(text=tr("⚠ Aucun DDS disponible."))
             return
 
         entry = {
@@ -1567,12 +1567,12 @@ class ColorCheckWindow(tk.Toplevel):
         actuelles sur toutes les tuiles de la couche ZL sélectionnée (miniatures).
         """
         if not self.selected_group:
-            self.status.config(text="⚠ Sélectionnez d'abord une couche ZL.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord une couche ZL."))
             return
 
         files = self.selected_group.get("files", [])
         if not files:
-            self.status.config(text="⚠ Aucun fichier dans ce groupe.")
+            self.status.config(text=tr("⚠ Aucun fichier dans ce groupe."))
             return
 
         entry = {
@@ -1589,7 +1589,7 @@ class ColorCheckWindow(tk.Toplevel):
 
     def _delete_one(self):
         if not self.selected_dds_info:
-            self.status.config(text="⚠ Sélectionnez un DDS individuel.")
+            self.status.config(text=tr("⚠ Sélectionnez un DDS individuel."))
             return
         self._do_delete(self.selected_dds_info)
         self._scan()
@@ -1597,7 +1597,7 @@ class ColorCheckWindow(tk.Toplevel):
     def _delete_all(self):
         """Supprime tous les DDS de la couche ZL sélectionnée."""
         if not self.selected_group:
-            self.status.config(text="⚠ Sélectionnez d'abord une couche ZL.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord une couche ZL."))
             return
         files = self.selected_group.get("files", [])
         if not files:
@@ -1635,7 +1635,7 @@ class ColorCheckWindow(tk.Toplevel):
         src_path = os.path.join(self.textures_dir, CORRECTIONS_FILE)
         if not os.path.isfile(src_path):
             self.status.config(
-                text="⚠ Aucune correction à archiver — appliquez d'abord des corrections.")
+                text=tr("⚠ Aucune correction à archiver — appliquez d'abord des corrections."))
             return
         try:
             os.makedirs(COLOR_CHECK_ARCHIVE_DIR, exist_ok=True)
@@ -1662,7 +1662,7 @@ class ColorCheckWindow(tk.Toplevel):
         """
         if not os.path.isdir(COLOR_CHECK_ARCHIVE_DIR):
             self.status.config(
-                text="⚠ Dossier Color_check/ introuvable — aucune archive disponible.")
+                text=tr("⚠ Dossier Color_check/ introuvable — aucune archive disponible."))
             return
         archives = [
             f for f in os.listdir(COLOR_CHECK_ARCHIVE_DIR)
@@ -1670,14 +1670,14 @@ class ColorCheckWindow(tk.Toplevel):
         ]
         if not archives:
             self.status.config(
-                text="⚠ Aucune archive dans Color_check/ — archivez d'abord des corrections.")
+                text=tr("⚠ Aucune archive dans Color_check/ — archivez d'abord des corrections."))
             return
         # Fenêtre de sélection
         sel_win = tk.Toplevel(self)
         sel_win.title("Restaurer corrections")
         sel_win.configure(bg="#3b5b49")
         sel_win.resizable(False, False)
-        tk.Label(sel_win, text="Choisir une archive à restaurer :",
+        tk.Label(sel_win, text=tr("Choisir une archive à restaurer :"),
                  bg="#3b5b49", fg="light green",
                  font=("TkFixedFont", 11, "bold")).pack(padx=12, pady=(10, 4))
         lb = tk.Listbox(sel_win, bg="black", fg="#88ccff",
@@ -1712,15 +1712,15 @@ class ColorCheckWindow(tk.Toplevel):
                 self.status.config(text=f"⚠ Erreur restauration : {e}")
         btn_f = tk.Frame(sel_win, bg="#3b5b49")
         btn_f.pack(pady=(4, 10))
-        ttk.Button(btn_f, text="✅ Restaurer",
+        ttk.Button(btn_f, text=tr("✅ Restaurer"),
                    command=_do_restore).pack(side=LEFT, padx=6)
-        ttk.Button(btn_f, text="Annuler",
+        ttk.Button(btn_f, text=tr("Annuler"),
                    command=sel_win.destroy).pack(side=LEFT, padx=6)
 
     def _export_list(self):
         """Exporte la liste de toutes les tuiles, organisée par couche ZL."""
         if not self.all_dds_list:
-            self.status.config(text="⚠ Aucun DDS scanné.")
+            self.status.config(text=tr("⚠ Aucun DDS scanné."))
             return
         out = os.path.join(self.textures_dir, "color_check_export.txt")
         try:
@@ -1751,7 +1751,7 @@ class ColorCheckWindow(tk.Toplevel):
           3. Lance le build via le parent
         """
         if not self.selected_group:
-            self.status.config(text="⚠ Sélectionnez d'abord une couche ZL dans la liste.")
+            self.status.config(text=tr("⚠ Sélectionnez d'abord une couche ZL dans la liste."))
             return
 
         group     = self.selected_group
@@ -1830,10 +1830,10 @@ class CombZoneEditor(tk.Toplevel):
         self._selected   = None    # index zone sélectionnée
 
         # ── Titre ──
-        tk.Label(self, text="Dessinez des rectangles sur les zones à protéger (pistes, marquages)",
+        tk.Label(self, text=tr("Dessinez des rectangles sur les zones à protéger (pistes, marquages)"),
                  bg="#1a1a2a", fg="#aaddff",
                  font=("TkFixedFont", 10, "bold")).pack(pady=(8, 2))
-        tk.Label(self, text="Clic+glisser = nouveau rectangle  |  Clic sur zone = sélectionner  |  Suppr = effacer",
+        tk.Label(self, text=tr("Clic+glisser = nouveau rectangle  |  Clic sur zone = sélectionner  |  Suppr = effacer"),
                  bg="#1a1a2a", fg="#888888",
                  font=("TkFixedFont", 8)).pack()
 
@@ -1852,7 +1852,7 @@ class CombZoneEditor(tk.Toplevel):
         right.pack(side=LEFT, fill=tk.Y, padx=(8, 0))
         right.pack_propagate(False)
 
-        tk.Label(right, text="Zones protégées", bg="#1a1a2a", fg="#aaddff",
+        tk.Label(right, text=tr("Zones protégées"), bg="#1a1a2a", fg="#aaddff",
                  font=("TkFixedFont", 10, "bold")).pack(pady=(4, 2))
 
         lb_frm = tk.Frame(right, bg="#1a1a2a")
@@ -1868,29 +1868,29 @@ class CombZoneEditor(tk.Toplevel):
         self._lb_zones.bind("<<ListboxSelect>>", self._on_lb_select)
 
         # Label de la zone sélectionnée
-        tk.Label(right, text="Étiquette :", bg="#1a1a2a", fg="#aaaaaa",
+        tk.Label(right, text=tr("Étiquette :"), bg="#1a1a2a", fg="#aaaaaa",
                  font=("TkFixedFont", 8)).pack(pady=(6, 0))
         self._label_var = tk.StringVar(value="piste")
         tk.Entry(right, textvariable=self._label_var, bg="#223322", fg="white",
                  font=("TkFixedFont", 9), insertbackground="white").pack(fill=tk.X, padx=4)
-        ttk.Button(right, text="✏ Renommer sélect.",
+        ttk.Button(right, text=tr("✏ Renommer sélect."),
                    command=self._rename_zone).pack(fill=tk.X, padx=4, pady=2)
-        ttk.Button(right, text="🗑 Supprimer sélect.",
+        ttk.Button(right, text=tr("🗑 Supprimer sélect."),
                    command=self._delete_selected).pack(fill=tk.X, padx=4, pady=2)
-        ttk.Button(right, text="🗑 Tout effacer",
+        ttk.Button(right, text=tr("🗑 Tout effacer"),
                    command=self._clear_all).pack(fill=tk.X, padx=4, pady=(8, 2))
 
         # ── Statut + boutons bas ──
-        self._lbl_status = tk.Label(self, text="Chargement image…",
+        self._lbl_status = tk.Label(self, text=tr("Chargement image…"),
                                     bg="#1a1a2a", fg="#aaffaa",
                                     font=("TkFixedFont", 9))
         self._lbl_status.pack(fill=tk.X, padx=8, pady=(2, 4))
 
         bf = tk.Frame(self, bg="#1a1a2a")
         bf.pack(pady=(0, 10))
-        ttk.Button(bf, text="✅ Valider et générer .comb",
+        ttk.Button(bf, text=tr("✅ Valider et générer .comb"),
                    command=self._confirm).pack(side=LEFT, padx=8)
-        ttk.Button(bf, text="Annuler",
+        ttk.Button(bf, text=tr("Annuler"),
                    command=self.destroy).pack(side=LEFT, padx=8)
 
         # Bindings dessin
@@ -1918,7 +1918,7 @@ class CombZoneEditor(tk.Toplevel):
             self._img_w, self._img_h = img.size
             self.after(0, self._redraw)
             self.after(0, lambda: self._lbl_status.config(
-                text="Dessinez des rectangles sur les zones à protéger.",
+                text=tr("Dessinez des rectangles sur les zones à protéger."),
                 fg="#aaffaa"))
         except Exception as e:
             self.after(0, lambda: self._lbl_status.config(
@@ -2103,7 +2103,7 @@ class BatchPreviewWindow(tk.Toplevel):
         tk.Label(self, text=f"Batch Preview — {label}  ({len(files)} tuiles)",
                  bg="#1a2a18", fg="#aaffaa",
                  font=("TkFixedFont", 11, "bold")).pack(pady=(8, 4))
-        tk.Label(self, text="Gauche = original  |  Droite = corrigé  — clic pour agrandir",
+        tk.Label(self, text=tr("Gauche = original  |  Droite = corrigé  — clic pour agrandir"),
                  bg="#1a2a18", fg="#ffdd88",
                  font=("TkFixedFont", 9)).pack()
 
@@ -2146,12 +2146,12 @@ class BatchPreviewWindow(tk.Toplevel):
                                  lambda e: self._canvas_scroll.itemconfig(
                                      canvas_win, width=e.width))
 
-        self._lbl_status = tk.Label(self, text="Chargement…",
+        self._lbl_status = tk.Label(self, text=tr("Chargement…"),
                                     bg="#1a2a18", fg="#aaffaa",
                                     font=("TkFixedFont", 9))
         self._lbl_status.pack(fill=tk.X, padx=8, pady=(2, 6))
 
-        ttk.Button(self, text="Fermer", command=self.destroy).pack(pady=(0, 8))
+        ttk.Button(self, text=tr("Fermer"), command=self.destroy).pack(pady=(0, 8))
 
         threading.Thread(target=self._load_all, daemon=True).start()
         # ── Thème couleurs ────────────────────────────────────────────
@@ -2338,9 +2338,9 @@ class BatchZoomWindow(tk.Toplevel):
 
         hdr = tk.Frame(self, bg="#0e1e0e")
         hdr.pack(fill=tk.X)
-        tk.Label(hdr, text="ORIGINAL", bg="#0e1e0e", fg="#ffdd88",
+        tk.Label(hdr, text=tr("ORIGINAL"), bg="#0e1e0e", fg="#ffdd88",
                  font=("TkFixedFont", 11, "bold"), width=30).pack(side=LEFT, expand=True)
-        tk.Label(hdr, text="CORRIGÉ",  bg="#0e1e0e", fg="#aaffff",
+        tk.Label(hdr, text=tr("CORRIGÉ"),  bg="#0e1e0e", fg="#aaffff",
                  font=("TkFixedFont", 11, "bold"), width=30).pack(side=LEFT, expand=True)
 
         cv_frame = tk.Frame(self, bg="#0e1e0e")
@@ -2371,8 +2371,8 @@ class BatchZoomWindow(tk.Toplevel):
 
         bf = tk.Frame(self, bg="#0e1e0e")
         bf.pack(pady=(0, 8))
-        ttk.Button(bf, text="↺ Reset zoom", command=self._reset_zoom).pack(side=LEFT, padx=6)
-        ttk.Button(bf, text="Fermer",        command=self.destroy).pack(side=LEFT, padx=6)
+        ttk.Button(bf, text=tr("↺ Reset zoom"), command=self._reset_zoom).pack(side=LEFT, padx=6)
+        ttk.Button(bf, text=tr("Fermer"),        command=self.destroy).pack(side=LEFT, padx=6)
 
         self.after(100, self._render)
         # ── Thème couleurs ────────────────────────────────────────────
@@ -2599,12 +2599,12 @@ class FusionPreviewWindow(tk.Toplevel):
         self._current_radius = tk.IntVar(value=48)
 
         # ── UI ──────────────────────────────────────────────────────
-        self._lbl_status = tk.Label(self, text="Chargement…",
+        self._lbl_status = tk.Label(self, text=tr("Chargement…"),
                                     bg="#1a2a20", fg="#aaffaa",
                                     font=("TkFixedFont", 9))
         self._lbl_status.pack(fill=tk.X, padx=10, pady=(6, 2))
 
-        tk.Label(self, text="Jointure colorimétrique — déplacez le curseur",
+        tk.Label(self, text=tr("Jointure colorimétrique — déplacez le curseur"),
                  bg="#1a2a20", fg="#ffdd88",
                  font=("TkFixedFont", 11, "bold")).pack(pady=(0, 2))
 
@@ -2628,11 +2628,11 @@ class FusionPreviewWindow(tk.Toplevel):
         # Colorimétrie
         colbar = tk.Frame(self, bg="#1a2a20")
         colbar.pack(fill=tk.X, padx=10, pady=(4, 0))
-        self._lbl_col_A = tk.Label(colbar, text="Source A : —",
+        self._lbl_col_A = tk.Label(colbar, text=tr("Source A : —"),
                                    bg="#1a2a20", fg="#ff9988",
                                    font=("TkFixedFont", 9), anchor="w")
         self._lbl_col_A.pack(side=tk.LEFT, padx=6)
-        self._lbl_col_B = tk.Label(colbar, text="Source B : —",
+        self._lbl_col_B = tk.Label(colbar, text=tr("Source B : —"),
                                    bg="#1a2a20", fg="#88aaff",
                                    font=("TkFixedFont", 9), anchor="e")
         self._lbl_col_B.pack(side=tk.RIGHT, padx=6)
@@ -2651,7 +2651,7 @@ class FusionPreviewWindow(tk.Toplevel):
         # Curseur
         sf = tk.Frame(self, bg="#1a2a20")
         sf.pack(fill=tk.X, padx=10, pady=(8, 2))
-        tk.Label(sf, text="Rayon dégradé :", bg="#1a2a20", fg="#ffdd88",
+        tk.Label(sf, text=tr("Rayon dégradé :"), bg="#1a2a20", fg="#ffdd88",
                  font=("TkFixedFont", 10, "bold")).pack(side=tk.LEFT)
         self._lbl_r = tk.Label(sf, text="48 px", width=10,
                                bg="#1a2a20", fg="#aaffaa",
@@ -2667,13 +2667,13 @@ class FusionPreviewWindow(tk.Toplevel):
         # Boutons
         bf = tk.Frame(self, bg="#1a2a20")
         bf.pack(pady=(6, 10))
-        ttk.Button(bf, text="✅ Appliquer ce rayon et fermer",
+        ttk.Button(bf, text=tr("✅ Appliquer ce rayon et fermer"),
                    command=self._apply).pack(side=tk.LEFT, padx=8)
-        ttk.Button(bf, text="🔨 Build avec dégradé (toute la tuile)",
+        ttk.Button(bf, text=tr("🔨 Build avec dégradé (toute la tuile)"),
                    command=self._build).pack(side=tk.LEFT, padx=8)
-        ttk.Button(bf, text="↺ Vue entière",
+        ttk.Button(bf, text=tr("↺ Vue entière"),
                    command=self._reset_fit).pack(side=tk.LEFT, padx=8)
-        ttk.Button(bf, text="✖ Fermer sans appliquer",
+        ttk.Button(bf, text=tr("✖ Fermer sans appliquer"),
                    command=self.destroy).pack(side=tk.LEFT, padx=8)
 
         import threading
@@ -2716,7 +2716,7 @@ class FusionPreviewWindow(tk.Toplevel):
 
         self._arr_full = arr
 
-        self.after(0, lambda: self._lbl_status.config(text="Détection jointure…"))
+        self.after(0, lambda: self._lbl_status.config(text=tr("Détection jointure…")))
 
         # Détection sur thumbnail 512px max
         TMAX  = 512
@@ -2820,7 +2820,7 @@ class FusionPreviewWindow(tk.Toplevel):
             import O4_Color_Normalize as CNORM
             base = CNORM.feathering_mask_radius
             if base > 0:
-                parts = [f"Rayons effectifs (base {base}px) :"]
+                parts = [tr("  Effective radii (base {base}px):").format(base=base)]
                 for zl in (13, 14, 15, 16, 17, 18, 19, 20):
                     r = CNORM.get_effective_feather_radius(zl)
                     # Estimation rayon avec boost ΔE
@@ -2833,11 +2833,11 @@ class FusionPreviewWindow(tk.Toplevel):
                     else:
                         boost = 1.0
                     r_adapted = int(r * boost)
-                    extra = f" → {r_adapted}px (avec ΔE boost)" if r_adapted != r else ""
+                    extra = f" → {r_adapted}px (ΔE boost)" if r_adapted != r else ""
                     parts.append(f"  ZL{zl} : {r}px{extra}")
                 zl_txt = "  |  ".join(parts[:1]) + "\n" + "  ".join(parts[1:5]) + "\n" + "  ".join(parts[5:])
             else:
-                zl_txt = "Dégradé OFF — activez un rayon pour voir la table ZL"
+                zl_txt = tr("Gradient: {radius} px — next Build").format(radius=0).replace("0 px — next Build", "OFF")
             self.after(0, lambda t=zl_txt: self._lbl_zl_table.config(text=t))
         except Exception:
             pass

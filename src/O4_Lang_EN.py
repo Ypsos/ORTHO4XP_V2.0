@@ -263,7 +263,7 @@ T = {
     "Could not write global config:"    : "Could not write global config:",
     "Error while writing tile cfg:"     : "Error while writing tile cfg:",
     "Finished imprinting"               : "Finished imprinting",
-    "ImprImprinting for provider"       : "Imprinting for provider",
+    "Imprinting for provider"            : "Imprinting for provider",
     "Global config file contains an invalid line:"
                                         : "Global config file contains an invalid line:",
     "Preview non générée :"             : "Preview not generated:",
@@ -336,5 +336,22 @@ T = {
                                             : "Everything installs in venv/ — nothing system-wide",
     "Créer le lanceur Ortho4XP (double-clic quotidien)"
                                             : "Create Ortho4XP launcher (daily double-click)",
+
+    # ── LABELS TECHNIQUES GUI (DDS format, référence couleur) ──────
+    "Réf: Calibré_48753_JPG_Europe"     : "Ref: Calibré_48753_JPG_Europe",
+    "BC1 — TERRE"                       : "BC1 — LAND",
+    "BC1 — MER"                         : "BC1 — SEA",
+    "BC3 — MER"                         : "BC3 — SEA",
+
+    # ── COLOR CHECK — boutons et labels dynamiques ─────────────────
+    "🗑 Supprimer TOUS DDS ZL"          : "🗑 Delete ALL ZL DDS",
+    "Gradient: {radius} px — next Build"     : "Gradient: {radius} px — next Build",
+    "Checker gradient: {radius} px — applies to all DDS at next Build"
+                                        : "Checker gradient: {radius} px — applies to all DDS at next Build",
+    "  Effective radii (base {base}px):" : "  Effective radii (base {base}px):",
+    "💡 Persistent seam: increase radius\n   or generate a .comb mask on the area."
+                                        : "💡 Persistent seam: increase radius\n   or generate a .comb mask on the area.",
+    "⚠ too low"                         : "⚠ too low",
+    "⚠ detail risk"                     : "⚠ detail risk",
 
 }

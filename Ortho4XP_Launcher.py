@@ -408,37 +408,46 @@ class Launcher(tk.Tk):
             rect.bind("<Button-1>",
                 lambda e, k=key, hv=hex_var, r=rect: _pick_color(k, hv, r))
 
-        # ── Boutons bas ───────────────────────────────────────────────────
+        # ── Boutons bas — deux lignes pour éviter la coupure ─────────────
         n = len([k for k in KEY_LABELS if k in theme_dict])
         tk.Frame(inner, bg="#a6e3a1", height=1).grid(
             row=n+3, column=0, columnspan=2, sticky="we", padx=6, pady=8)
 
         btn_frame = tk.Frame(inner, bg=BG_GLOBAL)
-        btn_frame.grid(row=n+4, column=0, columnspan=2, pady=12)
+        btn_frame.grid(row=n+4, column=0, columnspan=2, pady=12, sticky="we")
+        btn_frame.columnconfigure(0, weight=1)
+        btn_frame.columnconfigure(1, weight=1)
+        btn_frame.columnconfigure(2, weight=1)
+
+        # Sur Mac, tk.Button ignore bg/fg sans highlightbackground
+        # Sur Windows/Linux, highlightbackground crée une bordure indésirable
+        def _btn_kw(bg, fg, active_bg, active_fg):
+            kw = dict(bg=bg, fg=fg,
+                      activebackground=active_bg, activeforeground=active_fg,
+                      font=("Helvetica", 11, "bold"),
+                      padx=10, pady=10, relief="flat", cursor="hand2")
+            if SYSTEM == "Darwin":
+                kw["highlightbackground"] = bg
+            return kw
 
         tk.Button(btn_frame, text="💾  Enregistrer Thème Personnalisée",
-                  bg="#a6e3a1", fg="#1a2e1a",
-                  font=("Helvetica", 12, "bold"),
-                  padx=20, pady=10, relief="flat", cursor="hand2",
-                  command=lambda: self._save_custom_colors(win)
-                  ).pack(side="left", padx=10)
+                  command=lambda: self._save_custom_colors(win),
+                  **_btn_kw("#a6e3a1", "#1a2e1a", "#7ec87a", "#1a2e1a")
+                  ).grid(row=0, column=0, padx=6, pady=4, sticky="we")
         tk.Button(btn_frame, text="🔄 Réinitialiser Roland",
-                  bg="#2a4235", fg="#a6e3a1",
-                  font=("Helvetica", 11, "bold"),
-                  padx=12, pady=10, relief="flat", cursor="hand2",
-                  command=lambda: self._reset_custom_theme(win)
-                  ).pack(side="left", padx=10)
+                  command=lambda: self._reset_custom_theme(win),
+                  **_btn_kw("#2a4235", "#a6e3a1", "#1a2e1a", "#a6e3a1")
+                  ).grid(row=0, column=1, padx=6, pady=4, sticky="we")
         tk.Button(btn_frame, text="Annuler",
-                  bg="#a6e3a1", fg="black",
-                  font=("Helvetica", 11, "bold"),
-                  padx=20, pady=10, relief="flat", cursor="hand2",
-                  command=lambda: [win.grab_release(), win.destroy()]
-                  ).pack(side="left", padx=10)
+                  command=lambda: [win.grab_release(), win.destroy()],
+                  **_btn_kw("#a6e3a1", "#1a2e1a", "#7ec87a", "#1a2e1a")
+                  ).grid(row=0, column=2, padx=6, pady=4, sticky="we")
 
         win.update_idletasks()
-        win.geometry("700x980")
-        win.resizable(False, False)
-        win.grab_set()          # Bloque toute interaction avec le launcher pendant l'édition
+        win.geometry("760x980")       # +60px pour que les 3 boutons rentrent
+        win.minsize(700, 600)         # redimensionnable librement
+        win.resizable(True, True)
+        win.grab_set()
         win.focus_force()
         self._log("🎨 Éditeur Personnalisée ouvert.")
 
