@@ -156,24 +156,46 @@ class Launcher(tk.Tk):
                  fg="#a6e3a1", font=("Helvetica", 13, "bold")).pack(side="left", padx=(0, 8))
 
         # Chargement des thèmes disponibles
-        self._theme_names = ["roland", "ardoise", "sable", "ocean", "custom"]
+        self._theme_keys   = ["roland", "custom", "ardoise", "sable", "ocean"]
+        self._theme_labels = ["Roland", "Personnalisée", "Ardoise", "Sable", "Océan"]
         try:
             sys.path.insert(0, str(SRC_DIR))
             import O4_Theme_Manager as _TM
-            self._theme_names = list(_TM.list_themes().keys())
+            themes = _TM.list_themes()
+            self._theme_keys   = list(themes.keys())
+            self._theme_labels = list(themes.values())
             self._tm = _TM
         except Exception:
             self._tm = None
 
-        self._theme_var = tk.StringVar(value=self._theme_names[0])
+        # Trouver le label correspondant au thème actif
+        current_key = self._theme_keys[0]
         try:
             if self._tm:
-                self._theme_var.set(self._tm.current_theme_name())
+                current_key = self._tm.current_theme_name()
         except Exception:
             pass
+        try:
+            idx = self._theme_keys.index(current_key)
+            current_label = self._theme_labels[idx]
+        except (ValueError, IndexError):
+            current_label = self._theme_labels[0]
 
-        theme_combo = tk.OptionMenu(theme_frame, self._theme_var, *self._theme_names,
-                                    command=self._apply_theme)
+        self._theme_label_var = tk.StringVar(value=current_label)
+        self._theme_key_var   = tk.StringVar(value=current_key)
+
+        def _on_theme_select(label):
+            try:
+                idx = self._theme_labels.index(label)
+                key = self._theme_keys[idx]
+            except (ValueError, IndexError):
+                key = label
+            self._theme_key_var.set(key)
+            self._apply_theme(key)
+
+        theme_combo = tk.OptionMenu(theme_frame, self._theme_label_var,
+                                    *self._theme_labels,
+                                    command=_on_theme_select)
         theme_combo.config(bg=BG_GLOBAL, fg="#a6e3a1", font=("Helvetica", 12),
                            activebackground=BG_GLOBAL, highlightthickness=0,
                            relief="flat", bd=1)
@@ -208,13 +230,12 @@ class Launcher(tk.Tk):
         self._log("----------------------------------\n")
 
     # ── Gestion du thème ──────────────────────────────────────────────────
-    def _apply_theme(self, theme_name=None):
-        """Sauvegarde le thème et redémarre le Launcher pour l'appliquer complètement."""
+    def _apply_theme(self, theme_key=None):
+        """Sauvegarde le thème et redémarre le Launcher."""
         if not self._tm:
             return
-        name = theme_name or self._theme_var.get()
-        if self._tm.set_theme(name):
-            # Redémarrage propre — recrée tous les widgets avec les bonnes couleurs
+        key = theme_key or self._theme_key_var.get()
+        if self._tm.set_theme(key):
             self.after(200, self._restart)
 
     def _restart(self):
@@ -226,118 +247,192 @@ class Launcher(tk.Tk):
         launcher = str(BASE_DIR / "Ortho4XP_Launcher.py")
         subprocess.Popen([python, launcher])
         self.destroy()
-#####------------###
+
     def _apply_theme_btn(self):
-        """Bouton palette 🎨 → Ouvre l'éditeur complet"""
+        """Bouton palette 🎨 → Ouvre l'éditeur uniquement sur clic explicite."""
         if not self._tm:
             self._log("❌ O4_Theme_Manager non chargé.")
             return
-
         try:
-            if self._theme_var.get() != "custom":
-                self._tm.set_theme("custom")
-                self._log("✅ Passage sur thème 'custom'")
             self._open_custom_theme_editor_window()
         except Exception as e:
             self._log(f"❌ Erreur : {e}")
 
     def _open_custom_theme_editor_window(self):
-        """Éditeur complet avec TOUTES les couleurs demandées"""
-        win = tk.Toplevel(self)
-        win.title("🎨 Éditeur Thème Custom Complet")
-        win.configure(bg=BG_GLOBAL)
-        win.geometry("820x950")
-        win.resizable(True, True)
+        """
+        Éditeur Thème Personnalisée — palette colorchooser natif.
+        Compatible Mac (roue chromatique), Linux (gtk), Windows (dialog couleur).
+        tkinter.colorchooser est standard sur les 3 OS.
+        Par ligne : nom de l'élément | rectangle couleur actuelle | bouton Choisir.
+        """
+        from tkinter import colorchooser
 
-        tk.Label(win, text="🎨 Éditeur Thème Custom - Toutes les couleurs", 
-                 font=("Helvetica", 18, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=10)
+        win = tk.Toplevel(self)
+        win.title("🎨 Éditeur Thème Personnalisée")
+        win.configure(bg=BG_GLOBAL)
+        win.resizable(True, True)
+        win.protocol("WM_DELETE_WINDOW", lambda: [win.grab_release(), win.destroy()])
+
+        tk.Label(win, text="🎨  Éditeur Thème Personnalisée",
+                 font=("Helvetica", 15, "bold"),
+                 fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(12, 4))
+        tk.Label(win, text="Cliquez sur une couleur pour ouvrir la palette",
+                 font=("Helvetica", 11), fg="#e8f0ec", bg=BG_GLOBAL).pack(pady=(0, 8))
+
+        # ── Scrollable ────────────────────────────────────────────────────
+        outer = tk.Frame(win, bg=BG_GLOBAL)
+        outer.pack(fill="both", expand=True, padx=10)
+        cv_s = tk.Canvas(outer, bg=BG_GLOBAL, bd=0, highlightthickness=0)
+        sb   = tk.Scrollbar(outer, orient="vertical", command=cv_s.yview)
+        cv_s.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        cv_s.pack(side="left", fill="both", expand=True)
+        inner = tk.Frame(cv_s, bg=BG_GLOBAL)
+        wid = cv_s.create_window((0, 0), window=inner, anchor="nw")
+        inner.bind("<Configure>", lambda e: cv_s.configure(
+            scrollregion=cv_s.bbox("all")))
+        cv_s.bind("<Configure>", lambda e: cv_s.itemconfig(
+            wid, width=cv_s.winfo_width()))
+        # Molette — fonctionne Mac/Linux/Windows
+        def _scroll(e):
+            delta = int(-1 * (e.delta / 120)) if e.delta else (-1 if e.num==4 else 1)
+            cv_s.yview_scroll(delta, "units")
+        cv_s.bind_all("<MouseWheel>", _scroll)
+        cv_s.bind_all("<Button-4>",   _scroll)
+        cv_s.bind_all("<Button-5>",   _scroll)
+
+        KEY_LABELS = {
+            "bg":           "Fond principal",
+            "bg_secondary": "Fond secondaire",
+            "fg":           "Texte principal",
+            "fg_secondary": "Texte secondaire",
+            "btn_bg":       "Fond boutons",
+            "btn_fg":       "Texte boutons",
+            "btn_hover":    "Boutons survol",
+            "btn_active":   "Boutons actifs",
+            "console_bg":   "Console fond",
+            "console_fg":   "Console texte",
+            "accent":       "Couleur application",
+            "warning":      "Avertissement",
+            "error":        "Erreur",
+            "success":      "Succès",
+            "canvas_bg":    "Canvas fond",
+            "border":       "Bordures",
+            "shadow":       "Ombres",
+        }
 
         theme_dict = self._tm.get_custom_theme()
-        self._editor_vars = {}
+        self._editor_vars = {}   # key → tk.StringVar(hex)
 
-        keys_to_edit = [
-            "bg", "bg_secondary", "fg", "fg_secondary",
-            "btn_bg", "btn_fg", "btn_hover", "btn_active",
-            "console_bg", "console_fg", "accent",
-            "warning", "error", "success", "canvas_bg",
-            "border", "shadow"
-        ]
+        def _pick_color(key, hex_var, rect):
+            """Ouvre la palette colorchooser native — multi-OS."""
+            rect.config(bd=4, relief="ridge", highlightbackground="#a6e3a1",
+                        highlightthickness=3)
+            win.update_idletasks()
+            current = hex_var.get()
+            result = colorchooser.askcolor(
+                color=current,
+                title=f"Choisir : {KEY_LABELS.get(key, key)}",
+                parent=win
+            )
+            # Forcer fermeture palette et retour focus sur éditeur
+            rect.config(bd=2, relief="solid", highlightthickness=0)
+            win.lift()
+            win.focus_force()
+            if result and result[1]:
+                new_color = result[1].lower()
+                hex_var.set(new_color)
+                try:
+                    rect.config(bg=new_color)
+                except Exception:
+                    pass
 
-        for key in keys_to_edit:
-            frame = tk.Frame(win, bg=BG_GLOBAL)
-            frame.pack(fill="x", padx=25, pady=6)
+        # ── Ligne d'en-tête ───────────────────────────────────────────────
+        for col, txt in enumerate(["Élément", "Couleur actuelle"]):
+            tk.Label(inner, text=txt, bg=BG_GLOBAL, fg="#a6e3a1",
+                     font=("Helvetica", 10, "bold")).grid(
+                     row=0, column=col, padx=12, pady=4, sticky="w")
+        tk.Frame(inner, bg="#a6e3a1", height=1).grid(
+            row=1, column=0, columnspan=2, sticky="we", padx=6, pady=2)
 
-            # Nom de la couleur
-            tk.Label(frame, text=f"{key:<13}", width=15, anchor="w",
-                     bg=BG_GLOBAL, fg="#a6e3a1", font=("Helvetica", 11, "bold")).pack(side="left")
+        # ── Une ligne par clé ─────────────────────────────────────────────
+        for row_i, key in enumerate(KEY_LABELS):
+            if key not in theme_dict:
+                continue
+            color   = theme_dict.get(key, "#000000")
+            hex_var = tk.StringVar(value=color)
+            self._editor_vars[key] = {"hex": hex_var}
 
-            color = theme_dict.get(key, "#3b5b49")
-            r = int(color[1:3], 16)
+            # Nom
+            tk.Label(inner, text=KEY_LABELS[key], bg=BG_GLOBAL, fg="#e8f0ec",
+                     font=("Helvetica", 11), width=18, anchor="w").grid(
+                     row=row_i+2, column=0, padx=12, pady=4, sticky="w")
 
-            var_hex = tk.StringVar(value=color)
-            var_slider = tk.IntVar(value=r)
+            # Rectangle couleur — clic = ouvre palette
+            rect = tk.Label(inner, bg=color, width=18, height=2,
+                            relief="solid", bd=2, cursor="hand2")
+            rect.grid(row=row_i+2, column=1, padx=12, pady=4, sticky="w")
+            rect.bind("<Enter>",
+                lambda e, r=rect: r.config(bd=4, relief="ridge"))
+            rect.bind("<Leave>",
+                lambda e, r=rect: r.config(bd=2, relief="solid"))
+            rect.bind("<Button-1>",
+                lambda e, k=key, hv=hex_var, r=rect: _pick_color(k, hv, r))
 
-            self._editor_vars[key] = {
-                "hex": var_hex,
-                "slider": var_slider,
-                "preview": None
-            }
+        # ── Boutons bas ───────────────────────────────────────────────────
+        n = len([k for k in KEY_LABELS if k in theme_dict])
+        tk.Frame(inner, bg="#a6e3a1", height=1).grid(
+            row=n+3, column=0, columnspan=2, sticky="we", padx=6, pady=8)
 
-            # Champ Hex
-            tk.Entry(frame, textvariable=var_hex, width=9, font=("Courier", 12),
-                     bg="#2a4235", fg="white").pack(side="left", padx=8)
+        btn_frame = tk.Frame(inner, bg=BG_GLOBAL)
+        btn_frame.grid(row=n+4, column=0, columnspan=2, pady=12)
 
-            # Curseur
-            tk.Scale(frame, from_=0, to=255, variable=var_slider, orient="horizontal",
-                     length=280, bg=BG_GLOBAL, fg="#a6e3a1", troughcolor="#1e2a24",
-                     command=lambda v, k=key: self._live_update_color(k)).pack(side="left", padx=8)
+        tk.Button(btn_frame, text="💾  Enregistrer Thème Personnalisée",
+                  bg="#a6e3a1", fg="#1a2e1a",
+                  font=("Helvetica", 12, "bold"),
+                  padx=20, pady=10, relief="flat", cursor="hand2",
+                  command=lambda: self._save_custom_colors(win)
+                  ).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="🔄 Réinitialiser Roland",
+                  bg="#2a4235", fg="#a6e3a1",
+                  font=("Helvetica", 11, "bold"),
+                  padx=12, pady=10, relief="flat", cursor="hand2",
+                  command=lambda: self._reset_custom_theme(win)
+                  ).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="Annuler",
+                  bg="#a6e3a1", fg="black",
+                  font=("Helvetica", 11, "bold"),
+                  padx=20, pady=10, relief="flat", cursor="hand2",
+                  command=lambda: [win.grab_release(), win.destroy()]
+                  ).pack(side="left", padx=10)
 
-            # Preview visuel (rectangle couleur)
-            preview = tk.Label(frame, text="        ", bg=color, width=9, height=2,
-                              relief="solid", bd=3)
-            preview.pack(side="left", padx=12)
-            self._editor_vars[key]["preview"] = preview
-
-        # Boutons du bas
-        btn_frame = tk.Frame(win, bg=BG_GLOBAL)
-        btn_frame.pack(pady=25)
-
-        tk.Button(btn_frame, text="💾 Sauvegarder & Appliquer", 
-                  bg="#4a6b59", fg="white", font=("Helvetica", 13, "bold"),
-                  padx=20, pady=12,
-                  command=lambda: self._save_custom_colors(win)).pack(side="left", padx=15)
-
-        tk.Button(btn_frame, text="🔄 Réinitialiser Roland", 
-                  bg="#2a4235", fg="#a6e3a1", font=("Helvetica", 12, "bold"),
-                  command=lambda: self._reset_custom_theme(win)).pack(side="left", padx=15)
-
-        tk.Button(btn_frame, text="Annuler", bg="#a6e3a1", fg="black",
-                  font=("Helvetica", 12, "bold"), padx=20, pady=12,
-                  command=win.destroy).pack(side="left", padx=15)
-
-        self._log("🎨 Éditeur complet ouvert avec toutes les couleurs.")
-
-    def _live_update_color(self, key):
-        """Mise à jour visuelle en direct"""
-        try:
-            r = self._editor_vars[key]["slider"].get()
-            new_color = f"#{r:02x}{r:02x}{r:02x}"
-            self._editor_vars[key]["hex"].set(new_color)
-            self._editor_vars[key]["preview"].config(bg=new_color)
-        except:
-            pass
+        win.update_idletasks()
+        win.geometry("700x980")
+        win.resizable(False, False)
+        win.grab_set()          # Bloque toute interaction avec le launcher pendant l'édition
+        win.focus_force()
+        self._log("🎨 Éditeur Personnalisée ouvert.")
 
     def _save_custom_colors(self, win):
-        """Sauvegarde toutes les couleurs"""
+        """Sauvegarde toutes les couleurs dans THEMES['custom'] + fichier JSON"""
         try:
-            for key in self._editor_vars:
-                color = self._editor_vars[key]["hex"].get().strip().upper()
+            for key, vars_ in self._editor_vars.items():
+                color = vars_["hex"].get().strip()
                 if color.startswith("#") and len(color) in (4, 7):
-                    self._tm.set_custom_color(key, color)
-            
-            self._log("✅ Toutes les couleurs ont été sauvegardées !")
+                    self._tm.THEMES["custom"][key] = color
+            self._tm.THEMES["custom"]["name"] = "Personnalisée"
+            # Sauvegarde préférence thème actif
+            self._tm._active_theme_name = "custom"
+            self._tm._active_theme = self._tm.THEMES["custom"]
+            self._tm._save_prefs()
+            # Sauvegarde fichier custom_theme.json à la racine Ortho4XP
+            if hasattr(self._tm, "save_custom_theme_to_file"):
+                self._tm.save_custom_theme_to_file()
+            self._log("✅ Thème Personnalisée enregistré !")
+            try: win.grab_release()
+            except: pass
             win.destroy()
-            self.after(1000, self._restart)   # Redémarrage pour appliquer partout
+            self.after(800, self._restart)
         except Exception as e:
             self._log(f"❌ Erreur sauvegarde : {e}")
 
@@ -345,6 +440,8 @@ class Launcher(tk.Tk):
         if hasattr(self._tm, "reset_custom_to_roland"):
             self._tm.reset_custom_to_roland()
         self._log("🔄 Thème custom réinitialisé aux couleurs Roland.")
+        try: win.grab_release()
+        except: pass
         win.destroy()
         self.after(800, self._restart)
 

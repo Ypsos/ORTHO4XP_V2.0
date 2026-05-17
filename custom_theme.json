@@ -1,0 +1,20 @@
+{
+  "name": "Personnalisée",
+  "bg": "#fafe46",
+  "bg_secondary": "#466084",
+  "fg": "#ffc906",
+  "fg_secondary": "#a6e3a1",
+  "btn_bg": "#d01c00",
+  "btn_fg": "#cacaca",
+  "btn_hover": "#c8692b",
+  "btn_active": "#4f6c4d",
+  "console_bg": "#f8fff6",
+  "console_fg": "#8385fa",
+  "accent": "#dbe335",
+  "warning": "#e5c07b",
+  "error": "#eab985",
+  "success": "#5f6973",
+  "canvas_bg": "#81cea6",
+  "border": "#6b6719",
+  "shadow": "#53d8d9"
+}

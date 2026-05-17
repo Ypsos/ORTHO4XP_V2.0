@@ -59,7 +59,7 @@ def needs_mask(tile, til_x_left, til_y_top, zl, *args):
     y0 = int(ry * 4096 / factor)
     small_img = big_img.crop((x0, y0, x0 + 4096 // factor, y0 + 4096 // factor))
     small_array = numpy.array(small_img, dtype=numpy.uint8)
-    if small_array.max() <= 30:
+    if small_array.max() == 0:
         return False
     else:
         return small_img
@@ -254,10 +254,23 @@ def delete_old_masks_in_tile(tile, dest_dir):
 
     for til_x in range(til_x_min, til_x_max + 1, 16):
         for til_y in range(til_y_min, til_y_max + 1, 16):
+            # Supprimer mask PNG classique
             try:
                 os.remove(
                     os.path.join(dest_dir, FNAMES.legacy_mask(til_x, til_y))
                 )
+            except:
+                pass
+            # Supprimer mask distance _dist.png
+            try:
+                dist_name = FNAMES.legacy_mask(til_x, til_y).replace('.png', '_dist.png')
+                os.remove(os.path.join(dest_dir, dist_name))
+            except:
+                pass
+            # Supprimer masks synthétiques temporaires _synth_*.png
+            try:
+                synth_name = f"_synth_{til_x}_{til_y}.png"
+                os.remove(os.path.join(dest_dir, synth_name))
             except:
                 pass
 

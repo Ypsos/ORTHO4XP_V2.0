@@ -35,6 +35,52 @@ def download_textures(tile, download_queue, convert_queue):
             UI.progress_bar(
                 2, int(100 * done / (done + download_queue.qsize()))
             )
+            try:
+                import O4_Sea_Texture as _SEA
+                import O4_Imagery_Utils as _IMG
+                import O4_File_Names as _FN
+                import numpy as _np
+                from PIL import Image as _PILc
+
+                # Trouver le JPG source
+                def _get_jpg_path():
+                    layers = _IMG.local_combined_providers_dict.get(
+                        texture_attributes[3] if len(texture_attributes) > 3 else "", []
+                    )
+                    for rlayer in layers:
+                        lc = rlayer.get("layer_code", "")
+                        if lc not in _IMG.providers_dict:
+                            continue
+                        fname = _FN.jpeg_file_name_from_attributes(
+                            texture_attributes[0], texture_attributes[1],
+                            texture_attributes[2], lc)
+                        fdir = _FN.jpeg_file_dir_from_attributes(
+                            tile.lat, tile.lon, texture_attributes[2],
+                            _IMG.providers_dict[lc])
+                        fpath = os.path.join(fdir, fname)
+                        if os.path.isfile(fpath):
+                            return fpath
+                    return None
+
+                # Étape 1 : bouche zones noires/uniformes avec EOX
+                _SEA.patch_sea_black_zones(tile, *texture_attributes)
+
+                # Étape 2 : JPG bleu XP12 UNIQUEMENT sur tuiles uniformes
+                # (pleine mer sans fond marin réel)
+                jpg_path = _get_jpg_path()
+                if jpg_path:
+                    try:
+                        arr_c = _np.array(
+                            _PILc.open(jpg_path).convert("RGB"), dtype=_np.uint8
+                        )
+                        is_uniform = arr_c.astype('float32').std() < _SEA.UNIFORM_STD_THRESHOLD
+                        if is_uniform:
+                            _SEA.apply_sea_join_dissolve(
+                                tile, *texture_attributes, jpg_path)
+                    except Exception:
+                        pass
+            except Exception as _se:
+                UI.vprint(2, f"   [SeaTex] patch : {_se}")
             convert_queue.put((tile, *texture_attributes))
         else:
             # Fallback maritime : EOX Sentinel-2 pour zones sans JPG en mer
@@ -45,6 +91,27 @@ def download_textures(tile, download_queue, convert_queue):
                     UI.progress_bar(
                         2, int(100 * done / (done + download_queue.qsize()))
                     )
+                    # Étape 3 : grain de sable sur le JPG EOX téléchargé
+                    import O4_Imagery_Utils as _IMG
+                    import O4_File_Names as _FN
+                    layers = _IMG.local_combined_providers_dict.get(
+                        texture_attributes[3] if len(texture_attributes) > 3 else "", []
+                    )
+                    for rlayer in layers:
+                        lc = rlayer.get("layer_code", "")
+                        if lc not in _IMG.providers_dict:
+                            continue
+                        fname = _FN.jpeg_file_name_from_attributes(
+                            texture_attributes[0], texture_attributes[1],
+                            texture_attributes[2], lc)
+                        fdir = _FN.jpeg_file_dir_from_attributes(
+                            tile.lat, tile.lon, texture_attributes[2],
+                            _IMG.providers_dict[lc])
+                        fpath = os.path.join(fdir, fname)
+                        if os.path.isfile(fpath):
+                            _SEA.build_sea_buffer_jpeg(
+                                tile, *texture_attributes, fpath)
+                            break
                     convert_queue.put((tile, *texture_attributes))
             except Exception as _se:
                 UI.vprint(2, f"   [SeaTex] fallback : {_se}")

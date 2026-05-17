@@ -501,15 +501,30 @@ def build_coastal_info_panel(parent_frame):
 # PARAMÈTRES CFG (pour O4_Mask_Utils)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_coastal_params_for_tile(lat, lon):
-    """Retourne les paramètres Jojo si la tuile est côtière, sinon None."""
-    if is_coastal_tile(lat, lon)["is_coastal"]:
-        return {
-            "masks_width": 8000, "masking_mode": "sand",
-            "mask_zl": 15, "ratio_water": 0.2,
-            "use_masks_for_inland": False, "imprint_masks_to_dds": False,
-            "distance_masks_too": False, "masks_use_DEM_too": False,
-            "ratio_bathy": 0.0, "cover_zl": 18,
-            "water_tech": "XP12", "mesh_zl": 19, "sea_texture_blur": 0.0,
-        }
-    return None
+def get_coastal_params_for_tile(lat, lon, tile=None):
+    """
+    Retourne les paramètres côtiers si la tuile est côtière, sinon None.
+    Tous les paramètres viennent de la config tile (curseurs, ZL).
+    Cette fonction ne force AUCUNE valeur — elle lit depuis tile si disponible,
+    sinon retourne None pour laisser la config cfg s'appliquer.
+    """
+    if not is_coastal_tile(lat, lon)["is_coastal"]:
+        return None
+    if tile is None:
+        return {}
+    # Lire depuis la config tile — tous les paramètres variables
+    return {
+        "masks_width"         : getattr(tile, "masks_width",          6144),
+        "masking_mode"        : getattr(tile, "masking_mode",         "sand"),
+        "mask_zl"             : getattr(tile, "mask_zl",              17),
+        "ratio_water"         : getattr(tile, "ratio_water",          0.2),
+        "ratio_bathy"         : getattr(tile, "ratio_bathy",          1.0),
+        "use_masks_for_inland": getattr(tile, "use_masks_for_inland", True),
+        "imprint_masks_to_dds": getattr(tile, "imprint_masks_to_dds", True),
+        "distance_masks_too"  : getattr(tile, "distance_masks_too",   True),
+        "masks_use_DEM_too"   : getattr(tile, "masks_use_DEM_too",    False),
+        "water_tech"          : getattr(tile, "water_tech",           "XP12"),
+        "mesh_zl"             : getattr(tile, "mesh_zl",              19),
+        "sea_texture_blur"    : getattr(tile, "sea_texture_blur",     0.0),
+        "cover_zl"            : getattr(tile, "cover_zl",             18),
+    }

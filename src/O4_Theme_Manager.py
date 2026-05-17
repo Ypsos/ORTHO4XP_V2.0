@@ -33,7 +33,7 @@ else:
 THEMES: Dict[str, Dict] = {
 
     "roland": {
-        "name":          "Roland (défaut Ortho4XP)",
+        "name":          "Roland",
         "bg":            "#3b5b49",
         "bg_secondary":  "#2a4235",
         "fg":            "#e8f0ec",
@@ -54,7 +54,7 @@ THEMES: Dict[str, Dict] = {
     },
 
     "custom": {
-        "name":          "Personnalisé (modifiable)",
+        "name":          "Personnalisée",
         "bg":            "#3b5b49",
         "bg_secondary":  "#2a4235",
         "fg":            "#e8f0ec",
@@ -96,7 +96,7 @@ THEMES: Dict[str, Dict] = {
     },
 
     "sable": {
-        "name":          "Sable du désert",
+        "name":          "Sable",
         "bg":            "#4a3728",
         "bg_secondary":  "#3a2a1e",
         "fg":            "#f5e6d0",
@@ -117,7 +117,7 @@ THEMES: Dict[str, Dict] = {
     },
 
     "ocean": {
-        "name":          "Océan profond",
+        "name":          "Océan",
         "bg":            "#0a2040",
         "bg_secondary":  "#0d2d58",
         "fg":            "#c8e0f8",
@@ -154,6 +154,19 @@ def _load_prefs():
     """Charge le thème sauvegardé au dernier lancement."""
     global _active_theme_name, _active_theme
     try:
+        # 1. Charger custom_theme.json si présent
+        root = Path(__file__).resolve().parent.parent
+        custom_file = root / "custom_theme.json"
+        if custom_file.exists():
+            data = json.loads(custom_file.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and "bg" in data:
+                for k, v in data.items():
+                    THEMES["custom"][k] = v
+                THEMES["custom"]["name"] = "Personnalisée"
+    except Exception:
+        pass
+    try:
+        # 2. Charger le nom du thème actif
         if _PREFS_FILE.exists():
             data = json.loads(_PREFS_FILE.read_text(encoding="utf-8"))
             name = data.get("theme", "roland")
@@ -161,7 +174,7 @@ def _load_prefs():
                 _active_theme_name = name
                 _active_theme      = THEMES[name]
     except Exception:
-        pass  # si lecture échoue → thème dark par défaut
+        pass
 
 def _save_prefs():
     """Sauvegarde le thème choisi pour le prochain lancement."""
@@ -275,7 +288,10 @@ def apply_to_root(root):
             if wclass in ("Frame", "LabelFrame", "Toplevel", "Canvas"):
                 widget.configure(bg=theme["bg"])
             elif wclass == "Label":
-                widget.configure(bg=theme["bg"], fg=theme["fg"])
+                if getattr(widget, '_color_protected', False):
+                    pass
+                else:
+                    widget.configure(bg=theme["bg"], fg=theme["fg"])
             elif wclass == "Button":
                 widget.configure(
                     bg=theme["btn_bg"], fg=theme["btn_fg"],
@@ -359,9 +375,30 @@ def reset_custom_to_roland():
     """Remet le thème Custom aux couleurs Roland (point de départ conseillé)."""
     for k, v in THEMES["roland"].items():
         THEMES["custom"][k] = v
-    THEMES["custom"]["name"] = "Personnalisé (modifiable)"
+    THEMES["custom"]["name"] = "Personnalisée"
     _save_prefs()
     print("[Theme] Thème Custom réinitialisé aux couleurs Roland.")
+
+
+def save_custom_theme_to_file() -> bool:
+    """
+    Sauvegarde le thème Personnalisée dans custom_theme.json
+    à la racine du dossier Ortho4XP (venv/bulle autonome).
+    Retourne True si OK, False si erreur.
+    """
+    try:
+        root = Path(__file__).resolve().parent.parent
+        dest = root / "custom_theme.json"
+        root.mkdir(parents=True, exist_ok=True)
+        dest.write_text(
+            json.dumps(dict(THEMES["custom"]), indent=2, ensure_ascii=False),
+            encoding="utf-8"
+        )
+        print(f"[Theme] Thème Personnalisée sauvegardé → {dest}")
+        return True
+    except Exception as e:
+        print(f"[Theme] Erreur sauvegarde custom_theme.json : {e}")
+        return False
 
 
 def get_os() -> str:

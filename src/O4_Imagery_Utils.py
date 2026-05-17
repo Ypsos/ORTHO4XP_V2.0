@@ -2007,6 +2007,32 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
     (y0, x0) = GEO.gtile_to_wgs84(til_x_left, til_y_top, zoomlevel)
     (y1, x1) = GEO.gtile_to_wgs84(til_x_left + 16, til_y_top + 16, zoomlevel)
     mask_weight_below = numpy.zeros((4096, 4096), dtype=numpy.uint16)
+    # ── SEA EOX : pré-remplissage fond maritime avant assemblage multi-source ─
+    # Les JPG OrthoLitto (priorité high) écraseront par-dessus
+    # SEA visible uniquement là où aucun provider n'a de données
+    try:
+        import O4_Sea_Texture as _SEA
+        _sea_im = _SEA._get_sea_tile(til_x_left, til_y_top, zoomlevel)
+        if _sea_im is not None:
+            _sea_im = _sea_im.resize((4096, 4096), Image.LANCZOS).convert("RGB")
+            # ── Normalisation colorimétrique SEA → même profil sRGB que l'ortho ──
+            _sea_im = CNORM.normalize_if_enabled(_sea_im)
+            big_image.paste(_sea_im, (0, 0))
+            # Rangée voisine vers le large (+1 tuile dans chaque direction)
+            _step = 16
+            for _vx, _vy in [
+                (til_x_left - _step, til_y_top),
+                (til_x_left + _step, til_y_top),
+                (til_x_left, til_y_top - _step),
+                (til_x_left, til_y_top + _step),
+            ]:
+                _SEA.download_sea_neighbor_row(
+                    tile, _vx, _vy, zoomlevel,
+                    provider_code
+                )
+    except Exception as _sea_e:
+        UI.vprint(2, f"   [SeaTex] pré-remplissage : {_sea_e}")
+    # ─────────────────────────────────────────────────────────────────────────
     if len(local_combined_providers_dict[provider_code]) == 1:
         rlayer = local_combined_providers_dict[provider_code][0]
         true_til_x_left = til_x_left
@@ -2061,7 +2087,19 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
                 (4096, 4096), Image.BICUBIC
             )
         UI.vprint(2, "Finished imprinting", til_x_left, til_y_top)
-        return true_im
+        # ── Composite intelligent : true_im sur fond SEA EOX ─────────────────────
+        # Masque = pixels non-noirs de true_im (seuil 15 → robuste compression JPEG)
+        # Dégradé 32px → jointure douce entre ortho et SEA, pas de rectangle visible
+        try:
+            _arr_t = numpy.array(true_im.convert("RGB"), dtype=numpy.uint8)
+            _has_data = ((_arr_t[:,:,0] > 15) | (_arr_t[:,:,1] > 15) | (_arr_t[:,:,2] > 15))
+            _mask_pil = Image.fromarray((_has_data * 255).astype(numpy.uint8), "L")
+            _mask_pil = _mask_pil.filter(ImageFilter.GaussianBlur(32))
+            big_image.paste(true_im.convert("RGB"), (0, 0), _mask_pil)
+        except Exception as _pe:
+            UI.vprint(2, f"   [SeaTex] paste masqué échoué, paste direct : {_pe}")
+            big_image.paste(true_im.convert("RGB"), (0, 0))
+        return big_image
     # ── FONDU : rayon lu UNE FOIS avant la boucle (évite _frad=0 si Color Check ouvert) ──
     import O4_Color_Normalize as _CNORM
     _frad = _CNORM.get_effective_feather_radius(zoomlevel)

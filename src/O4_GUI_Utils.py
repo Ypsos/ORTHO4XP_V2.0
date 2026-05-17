@@ -31,19 +31,25 @@ _BTN_FG = "#ffffff"
 _CON_BG = "#0f0f1a"
 _CON_FG = "#50fa7b"
 _ACCENT = "#a6e3a1"
-try:
-    import O4_Theme_Manager as _TM
-    _t      = _TM.get_theme()
-    _BG     = _t.get("bg",           _BG)
-    _FG     = _t.get("fg",           _FG)
-    _FG2    = _t.get("fg_secondary", _FG2)
-    _BTN_BG = _t.get("btn_bg",       _BTN_BG)
-    _BTN_FG = _t.get("btn_fg",       _BTN_FG)
-    _CON_BG = _t.get("console_bg",   _CON_BG)
-    _CON_FG = _t.get("console_fg",   _CON_FG)
-    _ACCENT = _t.get("accent",       _ACCENT)
-except Exception:
-    pass
+
+def _reload_theme():
+    """Recharge les couleurs depuis le thème actif — appelé à chaque ouverture de fenêtre."""
+    global _BG, _FG, _FG2, _BTN_BG, _BTN_FG, _CON_BG, _CON_FG, _ACCENT
+    try:
+        import O4_Theme_Manager as _TM
+        _t      = _TM.get_theme()
+        _BG     = _t.get("bg",           _BG)
+        _FG     = _t.get("fg",           _FG)
+        _FG2    = _t.get("fg_secondary", _FG2)
+        _BTN_BG = _t.get("btn_bg",       _BTN_BG)
+        _BTN_FG = _t.get("btn_fg",       _BTN_FG)
+        _CON_BG = _t.get("console_bg",   _CON_BG)
+        _CON_FG = _t.get("console_fg",   _CON_FG)
+        _ACCENT = _t.get("accent",       _ACCENT)
+    except Exception:
+        pass
+
+_reload_theme()
 # -------------
 
 OsX = "dar" in sys.platform
@@ -55,6 +61,7 @@ class Ortho4XP_GUI(tk.Tk):
 
     def __init__(self):
         tk.Tk.__init__(self)
+        _reload_theme()
 
         # ── Détection 4K ──────────────────────────────────────────────
         dpi = self.winfo_fpixels('1i')
@@ -511,6 +518,7 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
     polyobj_list = []
 
     def __init__(self, parent, lat, lon):
+        _reload_theme()
         self.parent = parent
         self.lat = lat
         self.lon = lon
@@ -821,27 +829,27 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         if "dar" in sys.platform:
             self.canvas.bind("<ButtonPress-2>", self.scroll_start)
             self.canvas.bind("<B2-Motion>", self.scroll_move)
+            self.canvas.bind("<Double-ButtonPress-2>", self.delPol)
             self.canvas.bind("<Control-ButtonPress-2>", self.delPol)
         else:
             self.canvas.bind("<ButtonPress-3>", self.scroll_start)
             self.canvas.bind("<B3-Motion>", self.scroll_move)
+            self.canvas.bind("<Double-ButtonPress-3>", self.delPol)
             self.canvas.bind("<Control-ButtonPress-3>", self.delPol)
-        # Déplacement carte → bouton DROIT (Button-3 / B3-Motion)
-        # Bouton gauche réservé aux actions (newPoint, newPol, etc.)
         self.canvas.bind("<ButtonPress-3>", self.scroll_start)
         self.canvas.bind("<B3-Motion>", self.scroll_move)
         self.canvas.bind("<Shift-ButtonPress-1>", self.newPoint)
         self.canvas.bind("<Control-Shift-ButtonPress-1>", self.newPointGrid)
         self.canvas.bind("<Control-ButtonPress-1>", self.newPol)
-        self.canvas.bind("<ButtonPress-1>", self.newPoint)
-        # Note : clic gauche simple = newPoint (glisser = pas de déplacement accidentel)
+        self.canvas.bind("<Double-ButtonPress-1>", self.delPol)
         self.canvas.focus_set()
         self.canvas.bind("p", self.newPoint)
         self.canvas.bind("d", self.delete_zone_cmd)
         self.canvas.bind("n", self.save_zone_cmd)
         self.canvas.bind("<BackSpace>", self.delLast)
-        self.polygon_list = []
-        self.polyobj_list = []
+        if not hasattr(self, 'polygon_list') or not self.polygon_list:
+            self.polygon_list = []
+            self.polyobj_list = []
         self.poly_curr = []
         bdpoints = []
         for [latp, lonp] in [
@@ -1054,13 +1062,13 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         y = self.canvas.canvasy(event.y)
         copy = self.polygon_list[:]
         for poly in copy:
-            if poly[2] != self.zlpol.get():
-                continue
             if VECT.point_in_polygon([x, y], poly[0]):
                 idx = self.polygon_list.index(poly)
                 self.polygon_list.pop(idx)
                 self.canvas.delete(self.polyobj_list[idx])
                 self.polyobj_list.pop(idx)
+                self.compute_size()
+                return
         return
 
     def delAll(self):
@@ -1195,16 +1203,20 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         extract_mesh_thread.start()
         return
 
-    def delete_zone_cmd(self):
+    def delete_zone_cmd(self, event=None):
         try:
-            self.canvas.delete(self.poly_curr)
-            self.poly_curr = self.polyobj_list[-1]
-            self.points = self.polygon_list[-1][0]
-            self.coords = self.polygon_list[-1][1]
-            self.zlpol.set(self.polygon_list[-1][2])
-            self.zmap_combo.set(self.polygon_list[-1][3])
+            if not self.polygon_list:
+                return
+            self.canvas.delete(self.polyobj_list[-1])
             self.polygon_list.pop(-1)
             self.polyobj_list.pop(-1)
+            try:
+                self.canvas.delete(self.poly_curr)
+            except:
+                pass
+            self.poly_curr = None
+            self.points = []
+            self.coords = []
             self.compute_size()
         except:
             self.points = []

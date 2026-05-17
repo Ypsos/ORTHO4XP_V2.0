@@ -891,29 +891,43 @@ class ColorCheckWindow(tk.Toplevel):
                            font=("TkFixedFont", fs(10), "bold"))
         sf.pack(fill=tk.X, padx=6, pady=8)
 
+                                        # === Corrections sRGB par canal + Saturation ===
         cursors = [
-            ("R  corr",  self.var_r,  "#ff6666", -60, 60),
-            ("G  corr",  self.var_g,  "#66ff66", -60, 60),
-            ("B  corr",  self.var_b,  "#6699ff", -60, 60),
-            ("R  Lum",   self.var_lr, "#ffaaaa", -50, 50),
-            ("G  Lum",   self.var_lg, "#aaffaa", -50, 50),
-            ("B  Lum",   self.var_lb, "#aaaaff", -50, 50),
-            ("R  Cont",  self.var_cr, "#ff6666", -50, 50),
-            ("G  Cont",  self.var_cg, "#66ff66", -50, 50),
-            ("B  Cont",  self.var_cb, "#6699ff", -50, 50),
-            ("Sat R",    self.var_sr, "#ff8888", -50, 50),
-            ("Sat G",    self.var_sg, "#88ff88", -50, 50),
-            ("Sat B",    self.var_sb, "#8888ff", -50, 50),
+            # Colonne 1 - ROUGE
+            ("R corr", self.var_r,    "#ff4444", -60, 60),
+            ("R Lum",  self.var_lr,   "#ff7777", -50, 50),
+            ("R Cont", self.var_cr,   "#ff4444", -50, 50),
+            ("Sat R",  self.var_sr,   "#ff5555", -50, 50),
+
+            # Colonne 2 - VERT
+            ("G corr", self.var_g,    "#44ff44", -60, 60),
+            ("G Lum",  self.var_lg,   "#77ff77", -50, 50),
+            ("G Cont", self.var_cg,   "#44ff44", -50, 50),
+            ("Sat G",  self.var_sg,   "#55ff55", -50, 50),
+
+            # Colonne 3 - BLEU
+            ("B corr", self.var_b,    "#4488ff", -60, 60),
+            ("B Lum",  self.var_lb,   "#77aaff", -50, 50),
+            ("B Cont", self.var_cb,   "#4488ff", -50, 50),
+            ("Sat B",  self.var_sb,   "#5599ff", -50, 50),
         ]
 
-        for row, (label, var, color, frm, to) in enumerate(cursors):
+        for i, (label, var, color, frm, to) in enumerate(cursors):
+            row = i % 4          # 4 lignes
+            col = i // 4         # 3 colonnes
+            
             fc = tk.Frame(sf, bg="#3b5b49")
-            fc.grid(row=row // 3, column=row % 3, padx=8, pady=4, sticky="w")
-            tk.Label(fc, text=label, bg="#3b5b49", fg=color,
-                     font=("TkFixedFont", fs(10)), width=8, anchor="e").pack(side=LEFT)
+            fc.grid(row=row, column=col, padx=8, pady=4, sticky="w")
+            
+            lbl = tk.Label(fc, text=label, bg="#3b5b49", fg=color,
+                           font=("TkFixedFont", self._fs(11), "bold"), 
+                           width=8, anchor="e")
+            lbl.pack(side=LEFT)
+            lbl._color_protected = True
+            
             tk.Scale(fc, from_=frm, to=to, orient=HORIZONTAL, variable=var,
                      bg="#3b5b49", fg=color, troughcolor="#003300", length=sl,
-                     font=("TkFixedFont", fs(11)),
+                     font=("TkFixedFont", self._fs(11)),
                      command=self._on_slider_change).pack(side=LEFT)
 
         # Netteté
