@@ -133,9 +133,29 @@ class Launcher(tk.Tk):
         tk.Label(self, text="Version : Mac • Linux • Windows", 
                  font=("Helvetica", 14, "bold"), fg="#a6e3a1", bg=BG_GLOBAL).pack(pady=(0, 15))
 
-        self.log = tk.Text(self, height=12, bg="#0f0f1a", fg="#50fa7b",
-                           font=("Courier", 12), relief="flat", padx=15, pady=15)
-        self.log.pack(pady=10, padx=30, fill="both", expand=True)
+        self.log = tk.Text(
+            self,
+            height=12,
+            bg="#0f0f1a",
+            fg="#50fa7b",
+            font=("Courier", 12),
+            relief="flat",
+            padx=15,
+            pady=15,
+            takefocus=0,
+            cursor="arrow",
+            exportselection=False
+        )
+
+        self.log.pack(
+            pady=10,
+            padx=30,
+            fill="both",
+            expand=True
+        )
+
+        # Empêche d'écrire dans le log mais permet sélectionner/copier
+        self.log.bind("<Key>", lambda e: "break")
 
         # ==================== 2 COLONNES (3 à gauche / 2 à droite) ====================
         btn_container = tk.Frame(self, bg=BG_GLOBAL)
@@ -144,6 +164,7 @@ class Launcher(tk.Tk):
         col1 = tk.Frame(btn_container, bg=BG_GLOBAL)
         col1.grid(row=0, column=0, padx=15)
         HoverButton(col1, tr("1. Installer les Modules"), self.open_install_menu).pack(pady=8)
+
         col2 = tk.Frame(btn_container, bg=BG_GLOBAL)
         col2.grid(row=0, column=1, padx=15)
         HoverButton(col2, tr("🔍 Vérifier Intégrité"), self.check_integrity).pack(pady=8)
