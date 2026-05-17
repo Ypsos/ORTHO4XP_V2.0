@@ -305,6 +305,16 @@ class Ortho4XP_GUI(tk.Tk):
         self.frame_console.columnconfigure(0, weight=1)
         self.console = tk.Text(self.frame_console, bd=0, font=("Courier", fs(13)))
         self.console.grid(row=0, column=0, sticky=N+S+E+W)
+        # Lecture seule multi-OS : bloque saisie/suppression, autorise sélection et copie
+        def _console_key(e):
+            # Ctrl (Win/Linux) = state & 0x4 / Cmd (Mac) = state & 0x8
+            mod = e.state & 0x4 or e.state & 0x8
+            if mod and e.keysym.lower() in ("c", "a"):
+                return None   # Autoriser Ctrl+C / Ctrl+A / Cmd+C / Cmd+A
+            return "break"    # Bloquer tout le reste
+        self.console.bind("<Key>",       _console_key)
+        self.console.bind("<BackSpace>", lambda e: "break")
+        self.console.bind("<Delete>",    lambda e: "break")
 
         # ── Queues & redirection ───────────────────────────────────────
         self.console_queue = queue.Queue()
@@ -723,9 +733,24 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         row += 1
         tk.Label(
             self.frame_left,
-            text=tr("Ctrl+B1 : add texture\\nShift+B1: add zone point\\n") + "\nCtrl+B2 : delete zone",
-            bg=_BG,
-            justify=LEFT, fg=_FG).grid(row=row, column=0, padx=5, pady=20, sticky=N + S + E + W)
+            text=(
+                "── Navigation ──\n"
+                "Clic + glisser\n   Déplacer la carte\n"
+                "Molette\n   Zoom avant / arrière\n\n"
+                "── Tracer une zone ──\n"
+                "Shift + clic\n   Ajouter un point\n"
+                "Ctrl+Shift + clic\n   Point aligné grille\n"
+                "n  Sauvegarder la zone\n"
+                "Backspace  Annuler dernier pt\n\n"
+                "── Rectangle ZL ──\n"
+                "Ctrl + clic (vide)\n   Créer rectangle\n"
+                "Ctrl + clic (zone)\n   Supprimer rectangle\n"
+                "d  Supprimer dernière zone"
+            ),
+            bg=_BG, fg=_FG2,
+            justify=LEFT,
+            font=("Helvetica", 10),
+        ).grid(row=row, column=0, padx=5, pady=10, sticky=N + S + E + W)
         row += 1
         ttk.Button(
             self.frame_left, text=tr("    Apply    "), command=self.save_zone_list
@@ -819,6 +844,8 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
             UI.vprint(0, "Preview non générée :", filepreview)
             return
         self.image = Image.open(filepreview)
+        self._image_orig = self.image.copy()
+        self._zoom_scale = 1.0
         self.photo = ImageTk.PhotoImage(self.image)
         self.map_x_res = self.photo.width()
         self.map_y_res = self.photo.height()
@@ -829,24 +856,29 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         if "dar" in sys.platform:
             self.canvas.bind("<ButtonPress-2>", self.scroll_start)
             self.canvas.bind("<B2-Motion>", self.scroll_move)
-            self.canvas.bind("<Double-ButtonPress-2>", self.delPol)
             self.canvas.bind("<Control-ButtonPress-2>", self.delPol)
         else:
             self.canvas.bind("<ButtonPress-3>", self.scroll_start)
             self.canvas.bind("<B3-Motion>", self.scroll_move)
-            self.canvas.bind("<Double-ButtonPress-3>", self.delPol)
             self.canvas.bind("<Control-ButtonPress-3>", self.delPol)
-        self.canvas.bind("<ButtonPress-3>", self.scroll_start)
-        self.canvas.bind("<B3-Motion>", self.scroll_move)
-        self.canvas.bind("<Shift-ButtonPress-1>", self.newPoint)
+        self.canvas.bind("<ButtonPress-1>",
+            lambda e: None if (e.state & 0x1 or e.state & 0x4) else self.scroll_start(e))
+        self.canvas.bind("<B1-Motion>",
+            lambda e: None if (e.state & 0x1 or e.state & 0x4) else self.scroll_move(e))
+        self.canvas.bind("<Shift-ButtonPress-1>",         self.newPoint)
         self.canvas.bind("<Control-Shift-ButtonPress-1>", self.newPointGrid)
-        self.canvas.bind("<Control-ButtonPress-1>", self.newPol)
-        self.canvas.bind("<Double-ButtonPress-1>", self.delPol)
+        self.canvas.bind("<Control-ButtonPress-1>",       self._ctrl_click)
         self.canvas.focus_set()
         self.canvas.bind("p", self.newPoint)
         self.canvas.bind("d", self.delete_zone_cmd)
         self.canvas.bind("n", self.save_zone_cmd)
         self.canvas.bind("<BackSpace>", self.delLast)
+        # Zoom molette — multi-OS
+        self.canvas.bind("<MouseWheel>",  self._zoom)
+        self.canvas.bind("<Button-4>",    self._zoom)
+        self.canvas.bind("<Button-5>",    self._zoom)
+        self._preview_lat = lat
+        self._preview_lon = lon
         if not hasattr(self, 'polygon_list') or not self.polygon_list:
             self.polygon_list = []
             self.polyobj_list = []
@@ -914,10 +946,10 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
                 with urllib.request.urlopen(req, timeout=30) as r:
                     data = json.loads(r.read().decode("utf-8"))
                 break
-            except Exception as e:
-                print(f"Overpass {server}: {e}")
+            except Exception:
                 continue
         if not data:
+            print("[OACI] Serveurs Overpass indisponibles — cercles aéroports non affichés.")
             return
         result = []
         for el in data.get("elements", []):
@@ -1057,12 +1089,119 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         self.save_zone_cmd()
         return
 
+    def _zoom(self, event):
+        """Zoom molette progressif centré sur le curseur — multi-OS.
+        Facteur 1.25 par cran (doux). ZL logique min=10, max=14.
+        Le point sous le curseur reste fixe après le zoom."""
+        if event.num == 4 or (hasattr(event, 'delta') and event.delta > 0):
+            factor = 1.25
+        else:
+            factor = 1.0 / 1.25
+        if not hasattr(self, 'image') or self.image is None:
+            return
+        # Limiter le zoom total via _zoom_scale
+        if not hasattr(self, '_zoom_scale'):
+            self._zoom_scale = 1.0
+        new_scale = self._zoom_scale * factor
+        # Limite : 0.25x (zoom arrière max) à 8x (zoom avant max)
+        if new_scale < 0.25 or new_scale > 8.0:
+            return
+        self._zoom_scale = new_scale
+        # Position du curseur dans le canvas (avant zoom)
+        cx = self.canvas.canvasx(event.x)
+        cy = self.canvas.canvasy(event.y)
+        # Nouvelle taille image
+        orig = getattr(self, '_image_orig', None)
+        if orig is None:
+            self._image_orig = self.image.copy()
+            orig = self._image_orig
+        new_w = max(1, int(orig.width  * self._zoom_scale))
+        new_h = max(1, int(orig.height * self._zoom_scale))
+        self.image = orig.resize((new_w, new_h), Image.LANCZOS)
+        self.photo = ImageTk.PhotoImage(self.image)
+        self.map_x_res = new_w
+        self.map_y_res = new_h
+        # Recalculer coordonnées géo au zoomlevel logique
+        lat = getattr(self, '_preview_lat', None)
+        lon = getattr(self, '_preview_lon', None)
+        if lat is not None:
+            zl = self.zoomlevel
+            (tilxleft, tilytop) = GEO.wgs84_to_gtile(lat + 1, lon, zl)
+            (self.latmax, self.lonmin) = GEO.gtile_to_wgs84(tilxleft, tilytop, zl)
+            (self.xmin, self.ymin) = GEO.wgs84_to_pix(self.latmax, self.lonmin, zl)
+            (tilxright, tilybot) = GEO.wgs84_to_gtile(lat, lon + 1, zl)
+            (self.latmin, self.lonmax) = GEO.gtile_to_wgs84(tilxright+1, tilybot+1, zl)
+            (self.xmax, self.ymax) = GEO.wgs84_to_pix(self.latmin, self.lonmax, zl)
+        # Mettre à jour l'image dans le canvas
+        self.canvas.itemconfig(self.img_map, image=self.photo)
+        self.canvas.config(scrollregion=self.canvas.bbox(ALL))
+        # Recentrer sur le curseur : déplacer la vue pour que cx/cy reste fixe
+        self.canvas.xview_moveto((cx * factor - event.x) / new_w)
+        self.canvas.yview_moveto((cy * factor - event.y) / new_h)
+        # Redessiner zones et bordures
+        self._redraw_all(lat, lon)
+
+    def _redraw_all(self, lat, lon):
+        """Redessine les bordures et zones après un zoom."""
+        if lat is None or lon is None:
+            return
+        # Supprimer ancienne bordure
+        try:
+            self.canvas.delete(self.boundary)
+        except:
+            pass
+        # Redessiner bordure
+        bdpoints = []
+        for [latp, lonp] in [[lat, lon],[lat, lon+1],[lat+1, lon+1],[lat+1, lon]]:
+            [x, y] = self.latlon_to_xy(latp, lonp, self.zoomlevel)
+            bdpoints += [int(x), int(y)]
+        self.boundary = self.canvas.create_polygon(
+            bdpoints, outline="black", fill="", width=2)
+        # Redessiner les zones sauvegardées
+        old_poly_list = list(self.polygon_list)
+        old_points_list = [p[0] for p in old_poly_list]
+        old_coords_list = [p[1] for p in old_poly_list]
+        old_zl_list     = [p[2] for p in old_poly_list]
+        old_src_list    = [p[3] for p in old_poly_list]
+        for obj in self.polyobj_list:
+            try: self.canvas.delete(obj)
+            except: pass
+        self.polygon_list = []
+        self.polyobj_list = []
+        for coords, zl, src in zip(old_coords_list, old_zl_list, old_src_list):
+            self.coords = list(coords)
+            self.points = []
+            self.zlpol.set(zl)
+            self.zmap_combo.set(src)
+            for i in range(len(coords) // 2):
+                [x, y] = self.latlon_to_xy(coords[2*i], coords[2*i+1], self.zoomlevel)
+                self.points += [int(x), int(y)]
+            self.redraw_poly()
+            self.save_zone_cmd()
+        self.points = []
+        self.coords = []
+
+    def _ctrl_click(self, event):
+        """Ctrl+clic gauche : supprime la zone si le clic est dedans, sinon crée un rectangle."""
+        x = self.canvas.canvasx(event.x)
+        y = self.canvas.canvasy(event.y)
+        for poly in self.polygon_list:
+            closed = poly[0] + poly[0][0:2]
+            if VECT.point_in_polygon([x, y], closed):
+                self.delPol(event)
+                return
+        self.newPol(event)
+
     def delPol(self, event):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         copy = self.polygon_list[:]
         for poly in copy:
-            if VECT.point_in_polygon([x, y], poly[0]):
+            if poly[2] != self.zlpol.get():
+                continue
+            # point_in_polygon exige polygone fermé (dernier point = premier)
+            closed = poly[0] + poly[0][0:2]
+            if VECT.point_in_polygon([x, y], closed):
                 idx = self.polygon_list.index(poly)
                 self.polygon_list.pop(idx)
                 self.canvas.delete(self.polyobj_list[idx])
@@ -1086,13 +1225,16 @@ class Ortho4XP_Custom_ZL(tk.Toplevel):
         return
 
     def xy_to_latlon(self, x, y, zoomlevel):
-        pix_x = x + self.xmin
-        pix_y = y + self.ymin
+        # Corriger les coords canvas par le facteur de zoom PIL
+        scale = getattr(self, '_zoom_scale', 1.0)
+        pix_x = x / scale + self.xmin
+        pix_y = y / scale + self.ymin
         return GEO.pix_to_wgs84(pix_x, pix_y, zoomlevel)
 
     def latlon_to_xy(self, lat, lon, zoomlevel):
+        scale = getattr(self, '_zoom_scale', 1.0)
         [pix_x, pix_y] = GEO.wgs84_to_pix(lat, lon, zoomlevel)
-        return [pix_x - self.xmin, pix_y - self.ymin]
+        return [(pix_x - self.xmin) * scale, (pix_y - self.ymin) * scale]
 
     def delLast(self, event):
         self.points = self.points[0:-2]

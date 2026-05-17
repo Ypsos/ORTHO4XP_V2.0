@@ -339,7 +339,6 @@ def apply_to_root(root):
             pass
 
     _apply_recursive(root)
-    print(f"[Theme] Thème '{_active_theme['name']}' appliqué à la fenêtre ({_OS}).")
 
 
 def set_custom_color(key: str, value: str) -> bool:

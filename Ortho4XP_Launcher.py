@@ -154,8 +154,16 @@ class Launcher(tk.Tk):
             expand=True
         )
 
-        # Empêche d'écrire dans le log mais permet sélectionner/copier
-        self.log.bind("<Key>", lambda e: "break")
+        # Lecture seule multi-OS : bloque saisie/suppression, autorise sélection et copie
+        def _log_key(e):
+            # Ctrl (Win/Linux) = state & 0x4 / Cmd (Mac) = state & 0x8
+            mod = (e.state & 0x4) or (e.state & 0x8)
+            if mod and e.keysym.lower() in ("c", "a"):
+                return None   # Autoriser Ctrl+C / Ctrl+A / Cmd+C / Cmd+A
+            return "break"    # Bloquer tout le reste
+        self.log.bind("<Key>",       _log_key)
+        self.log.bind("<BackSpace>", lambda e: "break")
+        self.log.bind("<Delete>",    lambda e: "break")
 
         # ==================== 2 COLONNES (3 à gauche / 2 à droite) ====================
         btn_container = tk.Frame(self, bg=BG_GLOBAL)
