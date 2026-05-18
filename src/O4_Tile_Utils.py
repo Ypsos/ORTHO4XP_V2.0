@@ -3,6 +3,7 @@ import time
 import shutil
 import queue
 import threading
+import math
 from PIL import Image
 import O4_UI_Utils as UI
 import O4_File_Names as FNAMES
@@ -18,11 +19,123 @@ max_convert_slots = 4
 skip_downloads = False
 skip_converts = False
 
+# Largeur de la bande côtière vers le large pour EOX si JPG absent
+# Fond marin visible satellite ≈ 2km depuis la côte
+SEA_BAND_KM = 2.0
+
+
+################################################################################
+def build_sea_texture_set(tile, dico_customzl):
+    """
+    Lit le mesh et retourne un set de texture_attributes correspondant à des
+    triangles tri_type=2 (mer) situés dans la bande SEA_BAND_KM depuis le bord
+    des JPG source existants, ET sans JPG source disponible.
+    Appelé dans build_tile() avant les threads — zéro deadlock.
+    """
+    sea_set = set()
+    try:
+        import O4_Geo_Utils as GEO
+        mesh_file = FNAMES.mesh_file(tile.build_dir, tile.lat, tile.lon)
+        if not os.path.isfile(mesh_file):
+            return sea_set
+
+        (mesh_version, nbr_nodes, node_coords, nbr_tris,
+         tri_idx, tri_types) = MESH.read_mesh_file(mesh_file)
+
+        has_water = 7 if (mesh_version >= 1.3) else 3
+
+        band_deg_lat = SEA_BAND_KM / 111.12
+        band_deg_lon = SEA_BAND_KM / (
+            111.12 * math.cos(math.radians(tile.lat + 0.5))
+        )
+
+        # Collecter les positions lon/lat approximatives des JPG existants
+        existing_jpg_pos = []
+        for key, tex_attr in dico_customzl.items():
+            (til_x, til_y, zl, provider_code) = tex_attr
+            layers = IMG.local_combined_providers_dict.get(provider_code, [])
+            for rlayer in layers:
+                lc = rlayer.get("layer_code", "")
+                if lc not in IMG.providers_dict:
+                    continue
+                fname = FNAMES.jpeg_file_name_from_attributes(
+                    til_x, til_y, zl, lc)
+                fdir = FNAMES.jpeg_file_dir_from_attributes(
+                    tile.lat, tile.lon, zl, IMG.providers_dict[lc])
+                if os.path.isfile(os.path.join(fdir, fname)):
+                    n = 2 ** zl
+                    lon_approx = til_x / n * 360.0 - 180.0
+                    lat_approx = math.degrees(
+                        math.atan(math.sinh(math.pi * (1 - 2 * til_y / n)))
+                    )
+                    existing_jpg_pos.append((lat_approx, lon_approx))
+                break
+
+        if not existing_jpg_pos:
+            return sea_set
+
+        # Pour chaque triangle mer sans JPG dans la bande
+        for i in range(nbr_tris):
+            t = tri_types[i] & has_water
+            t = t and (2 * (t > 1 or tile.use_masks_for_inland) or 1)
+            if t != 2:
+                continue
+
+            (n1, n2, n3) = tri_idx[3 * i: 3 * i + 3]
+            bary_lon = (
+                node_coords[5*n1] + node_coords[5*n2] + node_coords[5*n3]
+            ) / 3
+            bary_lat = (
+                node_coords[5*n1+1] + node_coords[5*n2+1] + node_coords[5*n3+1]
+            ) / 3
+
+            key = GEO.wgs84_to_orthogrid(bary_lat, bary_lon, tile.mesh_zl)
+            if key not in dico_customzl:
+                continue
+
+            tex_attr = dico_customzl[key]
+            (til_x, til_y, zl, provider_code) = tex_attr
+
+            # Vérifier que le JPG est absent
+            jpg_exists = False
+            layers = IMG.local_combined_providers_dict.get(provider_code, [])
+            for rlayer in layers:
+                lc = rlayer.get("layer_code", "")
+                if lc not in IMG.providers_dict:
+                    continue
+                fname = FNAMES.jpeg_file_name_from_attributes(
+                    til_x, til_y, zl, lc)
+                fdir = FNAMES.jpeg_file_dir_from_attributes(
+                    tile.lat, tile.lon, zl, IMG.providers_dict[lc])
+                if os.path.isfile(os.path.join(fdir, fname)):
+                    jpg_exists = True
+                break
+
+            if jpg_exists:
+                continue
+
+            # Vérifier que le barycentre est dans la bande 2km
+            in_band = any(
+                abs(bary_lat - lat_j) <= band_deg_lat and
+                abs(bary_lon - lon_j) <= band_deg_lon
+                for (lat_j, lon_j) in existing_jpg_pos
+            )
+
+            if in_band:
+                sea_set.add(tex_attr)
+
+        UI.vprint(
+            1, f"   [SeaTex] {len(sea_set)} tuile(s) mer dans bande "
+               f"{SEA_BAND_KM}km identifiée(s) via mesh."
+        )
+    except Exception as e:
+        UI.vprint(2, f"   [SeaTex] build_sea_texture_set erreur : {e}")
+    return sea_set
 
 
 ################################################################################
 ################################################################################
-def download_textures(tile, download_queue, convert_queue):
+def download_textures(tile, download_queue, convert_queue, sea_texture_set=None):
     UI.vprint(1, "-> Opening download queue.")
     done = 0
     while True:
@@ -31,90 +144,27 @@ def download_textures(tile, download_queue, convert_queue):
             UI.progress_bar(2, 100)
             break
         if IMG.build_jpeg_ortho(tile, *texture_attributes):
+            # JPG source présent — pipeline original inchangé
             done += 1
             UI.progress_bar(
                 2, int(100 * done / (done + download_queue.qsize()))
             )
-            try:
-                import O4_Sea_Texture as _SEA
-                import O4_Imagery_Utils as _IMG
-                import O4_File_Names as _FN
-                import numpy as _np
-                from PIL import Image as _PILc
-
-                # Trouver le JPG source
-                def _get_jpg_path():
-                    layers = _IMG.local_combined_providers_dict.get(
-                        texture_attributes[3] if len(texture_attributes) > 3 else "", []
-                    )
-                    for rlayer in layers:
-                        lc = rlayer.get("layer_code", "")
-                        if lc not in _IMG.providers_dict:
-                            continue
-                        fname = _FN.jpeg_file_name_from_attributes(
-                            texture_attributes[0], texture_attributes[1],
-                            texture_attributes[2], lc)
-                        fdir = _FN.jpeg_file_dir_from_attributes(
-                            tile.lat, tile.lon, texture_attributes[2],
-                            _IMG.providers_dict[lc])
-                        fpath = os.path.join(fdir, fname)
-                        if os.path.isfile(fpath):
-                            return fpath
-                    return None
-
-                # Étape 1 : bouche zones noires/uniformes avec EOX
-                _SEA.patch_sea_black_zones(tile, *texture_attributes)
-
-                # Étape 2 : JPG bleu XP12 UNIQUEMENT sur tuiles uniformes
-                # (pleine mer sans fond marin réel)
-                jpg_path = _get_jpg_path()
-                if jpg_path:
-                    try:
-                        arr_c = _np.array(
-                            _PILc.open(jpg_path).convert("RGB"), dtype=_np.uint8
-                        )
-                        is_uniform = arr_c.astype('float32').std() < _SEA.UNIFORM_STD_THRESHOLD
-                        if is_uniform:
-                            _SEA.apply_sea_join_dissolve(
-                                tile, *texture_attributes, jpg_path)
-                    except Exception:
-                        pass
-            except Exception as _se:
-                UI.vprint(2, f"   [SeaTex] patch : {_se}")
             convert_queue.put((tile, *texture_attributes))
         else:
-            # Fallback maritime : EOX Sentinel-2 pour zones sans JPG en mer
-            try:
-                import O4_Sea_Texture as _SEA
-                if _SEA.download_sea_jpeg(tile, *texture_attributes):
-                    done += 1
-                    UI.progress_bar(
-                        2, int(100 * done / (done + download_queue.qsize()))
-                    )
-                    # Étape 3 : grain de sable sur le JPG EOX téléchargé
-                    import O4_Imagery_Utils as _IMG
-                    import O4_File_Names as _FN
-                    layers = _IMG.local_combined_providers_dict.get(
-                        texture_attributes[3] if len(texture_attributes) > 3 else "", []
-                    )
-                    for rlayer in layers:
-                        lc = rlayer.get("layer_code", "")
-                        if lc not in _IMG.providers_dict:
-                            continue
-                        fname = _FN.jpeg_file_name_from_attributes(
-                            texture_attributes[0], texture_attributes[1],
-                            texture_attributes[2], lc)
-                        fdir = _FN.jpeg_file_dir_from_attributes(
-                            tile.lat, tile.lon, texture_attributes[2],
-                            _IMG.providers_dict[lc])
-                        fpath = os.path.join(fdir, fname)
-                        if os.path.isfile(fpath):
-                            _SEA.build_sea_buffer_jpeg(
-                                tile, *texture_attributes, fpath)
-                            break
-                    convert_queue.put((tile, *texture_attributes))
-            except Exception as _se:
-                UI.vprint(2, f"   [SeaTex] fallback : {_se}")
+            # JPG absent — EOX uniquement si triangle mer dans bande 2km
+            is_sea_tile = (sea_texture_set is not None and
+                           texture_attributes in sea_texture_set)
+            if is_sea_tile:
+                try:
+                    import O4_Sea_Texture as _SEA
+                    if _SEA.download_sea_jpeg(tile, *texture_attributes):
+                        done += 1
+                        UI.progress_bar(
+                            2, int(100 * done / (done + download_queue.qsize()))
+                        )
+                        convert_queue.put((tile, *texture_attributes))
+                except Exception as _se:
+                    UI.vprint(2, f"   [SeaTex] fallback : {_se}")
 
         if UI.red_flag:
             UI.vprint(1, "Download process interrupted.")
@@ -192,6 +242,14 @@ def build_tile(tile):
         UI.exit_message_and_bottom_line("")
         return 0
 
+    # Construire le set des tuiles mer dans bande 2km — thread principal
+    try:
+        dico_customzl = DSF.zone_list_to_ortho_dico(tile)
+        sea_texture_set = build_sea_texture_set(tile, dico_customzl)
+    except Exception as _ste:
+        UI.vprint(2, f"   [SeaTex] sea_texture_set non construit : {_ste}")
+        sea_texture_set = None
+
     download_queue = queue.Queue()
     convert_queue = queue.Queue()
 
@@ -202,7 +260,8 @@ def build_tile(tile):
         target=DSF.build_dsf, args=[tile, download_queue]
     )
     download_thread = threading.Thread(
-        target=download_textures, args=[tile, download_queue, convert_queue]
+        target=download_textures,
+        args=[tile, download_queue, convert_queue, sea_texture_set]
     )
     build_dsf_thread.start()
     if not skip_downloads:

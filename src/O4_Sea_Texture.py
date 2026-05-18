@@ -32,46 +32,25 @@ SEA_URL = (
     "&TileMatrix={zoom}&TileCol={x}&TileRow={y}"
 )
 
-# dico_sea chargé par O4_Tile_Utils dans IMG._dico_sea_global avant les threads
-# Zéro relecture mesh dans les threads — zéro deadlock
-
 
 def download_sea_jpeg(tile, til_x_left, til_y_top, zoomlevel, provider_code,
                       *args):
     """
-    Télécharge un JPG EOX Sentinel-2 pour une tuile côtière sans données.
+    Télécharge un JPG EOX Sentinel-2 pour une tuile sans données provider.
+    Activé quand build_jpeg_ortho retourne False (JPG absent).
     Retourne True si le JPG a été téléchargé et sauvegardé, False sinon.
+
+    Correction V3 : suppression du blocage _dico_sea_global qui était
+    toujours vide et empêchait le fallback EOX de s'activer.
     """
     try:
-        # 1. Vérifier que c'est une zone mer côtière
-        # Lire depuis IMG._dico_sea_global — chargé dans thread principal, zéro deadlock
-        import O4_Imagery_Utils as _IMG
-        dico_sea = getattr(_IMG, '_dico_sea_global', {})
-        if not dico_sea:
-            return False
-
-        mask_zl = int(getattr(tile, 'mask_zl', 17))
-        factor = max(1, 2**(int(zoomlevel) - int(mask_zl)))
-        mx = (int(til_x_left / factor) // 16) * 16
-        my = (int(til_y_top  / factor) // 16) * 16
-
-        is_sea = False
-        for dx in range(-1, 2):
-            for dy in range(-1, 2):
-                if ((mx + dx*16), (my + dy*16)) in dico_sea:
-                    is_sea = True
-                    break
-
-        if not is_sea:
-            return False
-
-        # 2. Télécharger tuile EOX ZL12 correspondante
+        # Télécharger tuile EOX ZL12 correspondante
+        import O4_Imagery_Utils as IMG
         sea_img = _get_sea_tile(til_x_left, til_y_top, zoomlevel)
         if sea_img is None:
             return False
 
-        # 3. Sauvegarder dans le dossier du provider principal
-        import O4_Imagery_Utils as IMG
+        # Sauvegarder dans le dossier du provider principal
         layers = IMG.local_combined_providers_dict.get(provider_code, [])
         if not layers:
             return False
@@ -155,27 +134,8 @@ def patch_sea_black_zones(tile, til_x_left, til_y_top, zoomlevel, provider_code,
     Retourne True si le JPG a été modifié.
     """
     try:
-        import O4_Imagery_Utils as _IMG
-        dico_sea = getattr(_IMG, '_dico_sea_global', {})
-        if not dico_sea:
-            return False
-
-        # Vérifier zone mer
-        mask_zl = int(getattr(tile, 'mask_zl', 17))
-        factor = max(1, 2**(int(zoomlevel) - int(mask_zl)))
-        mx = (int(til_x_left / factor) // 16) * 16
-        my = (int(til_y_top  / factor) // 16) * 16
-
-        is_sea = False
-        for dx in range(-1, 2):
-            for dy in range(-1, 2):
-                if ((mx + dx*16), (my + dy*16)) in dico_sea:
-                    is_sea = True
-                    break
-        if not is_sea:
-            return False
-
         # Trouver le JPG source
+        import O4_Imagery_Utils as _IMG
         layers = _IMG.local_combined_providers_dict.get(provider_code, [])
         if not layers:
             return False

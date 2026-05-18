@@ -579,7 +579,7 @@ def get_overpass_data(query, bbox, server_code=None):
             return 0
         if UI.red_flag:
             return 0
-        time.sleep(2 ** tentative)
+        time.sleep(min(2 ** tentative, 30))
         tentative += 1
     return r.content
 
