@@ -120,16 +120,50 @@ def _score_compression(arr: numpy.ndarray) -> Tuple[float, Dict]:
 
 
 def _score_cloud(arr: numpy.ndarray) -> Tuple[float, Dict]:
+    """
+    Détection nuages améliorée — 3 critères combinés :
+    1. Luminance haute + faible saturation (nuages blancs classiques)
+    2. Variance locale faible sur zones lumineuses (texture uniforme = nuage)
+    3. Exclusion ciel bleu pour réduire faux positifs
+    Réduit faux positifs (neige/sable) et faux négatifs (voile atmosphérique).
+    """
     r = arr[:,:,0].astype(numpy.float32)
     g = arr[:,:,1].astype(numpy.float32)
     b = arr[:,:,2].astype(numpy.float32)
-    luminance  = (r + g + b) / 3.0
-    saturation = (numpy.maximum(r, numpy.maximum(g, b))
-                - numpy.minimum(r, numpy.minimum(g, b)))
-    cloud_mask  = (luminance > 200) & (saturation < 30)
+
+    luminance = (r + g + b) / 3.0
+    sat       = (numpy.maximum(r, numpy.maximum(g, b))
+               - numpy.minimum(r, numpy.minimum(g, b)))
+
+    # Critère 1 : nuage dense (luminance élevée + très faible saturation)
+    mask_dense = (luminance > 210) & (sat < 20)
+
+    # Critère 2 : voile atmosphérique (luminance modérée + sat faible + variance basse)
+    h, w    = arr.shape[:2]
+    block   = 4
+    var_map = numpy.zeros((h, w), dtype=numpy.float32)
+    for dy in range(0, h - block, block):
+        for dx in range(0, w - block, block):
+            patch = luminance[dy:dy+block, dx:dx+block]
+            var_map[dy:dy+block, dx:dx+block] = float(patch.std())
+    mask_voile = (luminance > 180) & (sat < 35) & (var_map < 8.0)
+
+    # Critère 3 : exclusion ciel bleu (ne pas pénaliser le bleu naturel)
+    blue_sky = (b > r + 10) & (b > g + 5) & (luminance > 150)
+
+    # Fusion : union critères 1+2, soustraction ciel bleu
+    cloud_mask  = (mask_dense | mask_voile) & (~blue_sky)
     cloud_ratio = float(cloud_mask.mean()) * 100.0
-    score = float(numpy.clip(100 - cloud_ratio * 2, 0, 100))
-    return score, {"cloud_ratio_pct": round(cloud_ratio, 2)}
+
+    # Score : tolérance jusqu'à 5%, pénalité progressive ensuite
+    penalite = float(numpy.clip((cloud_ratio - 5.0) * 2.1, 0, 100))
+    score    = float(numpy.clip(100 - penalite, 0, 100))
+
+    return score, {
+        "cloud_ratio_pct" : round(cloud_ratio, 2),
+        "cloud_dense_pct" : round(float(mask_dense.mean()) * 100, 2),
+        "cloud_voile_pct" : round(float(mask_voile.mean()) * 100, 2),
+    }
 
 
 def _score_color_drift(arr: numpy.ndarray) -> Tuple[float, Dict]:
@@ -145,23 +179,68 @@ def _score_color_drift(arr: numpy.ndarray) -> Tuple[float, Dict]:
 
 
 def _score_seam_risk(arr: numpy.ndarray) -> Tuple[float, Dict]:
-    h, w   = arr.shape[:2]
-    margin = max(1, h // 32)
+    """
+    Détection seam risk améliorée — 3 analyses combinées :
+    1. Gradient bord/centre (méthode originale améliorée)
+    2. Analyse des 4 bords indépendamment (détecte jointures directionnelles)
+    3. Détection discontinuité locale sur les bordures (gradient abrupt)
+    Réduit les faux positifs sur images uniformes et les faux négatifs
+    sur jointures partielles (1 côté seulement).
+    """
+    h, w    = arr.shape[:2]
+    margin  = max(2, h // 16)   # marge plus large que V1 pour meilleure détection
+    arr_f   = arr.astype(numpy.float32)
+
+    # ── Analyse 1 : drift global bord/centre ─────────────────────────
     border = numpy.concatenate([
-        arr[:margin,  :, :].reshape(-1, 3),
-        arr[-margin:, :, :].reshape(-1, 3),
-        arr[:, :margin,  :].reshape(-1, 3),
-        arr[:, -margin:, :].reshape(-1, 3),
-    ], axis=0).astype(numpy.float32)
-    center      = arr[h//4:3*h//4, w//4:3*w//4, :].reshape(-1, 3).astype(numpy.float32)
-    border_mean = border.mean(axis=0)
-    center_mean = center.mean(axis=0)
-    drift = float(numpy.abs(border_mean - center_mean).mean())
-    score = float(numpy.clip(100 - drift * 2, 0, 100))
+        arr_f[:margin,  :,  :].reshape(-1, 3),
+        arr_f[-margin:, :,  :].reshape(-1, 3),
+        arr_f[:, :margin,   :].reshape(-1, 3),
+        arr_f[:, -margin:,  :].reshape(-1, 3),
+    ], axis=0)
+    center       = arr_f[h//4:3*h//4, w//4:3*w//4, :].reshape(-1, 3)
+    border_mean  = border.mean(axis=0)
+    center_mean  = center.mean(axis=0)
+    drift_global = float(numpy.abs(border_mean - center_mean).mean())
+
+    # ── Analyse 2 : bords indépendants (asymétrie de jointure) ───────
+    bords = {
+        "haut" : arr_f[:margin,  :,  :].reshape(-1, 3).mean(axis=0),
+        "bas"  : arr_f[-margin:, :,  :].reshape(-1, 3).mean(axis=0),
+        "gche" : arr_f[:, :margin,   :].reshape(-1, 3).mean(axis=0),
+        "droit": arr_f[:, -margin:,  :].reshape(-1, 3).mean(axis=0),
+    }
+    drifts_bords = [float(numpy.abs(v - center_mean).mean()) for v in bords.values()]
+    drift_max    = max(drifts_bords)   # pire bord = risque jointure directionnelle
+
+    # ── Analyse 3 : gradient abrupt sur ligne de bordure ─────────────
+    # Mesure la discontinuité pixel-à-pixel sur la 1ère et dernière ligne
+    grad_h = float(numpy.abs(
+        arr_f[margin, :, :].astype(float) - arr_f[margin-1, :, :].astype(float)
+    ).mean())
+    grad_b = float(numpy.abs(
+        arr_f[h-margin, :, :].astype(float) - arr_f[h-margin+1, :, :].astype(float)
+    ).mean())
+    grad_bordure = max(grad_h, grad_b)
+
+    # ── Score combiné ─────────────────────────────────────────────────
+    # Pondération : global 40%, max bord 40%, gradient 20%
+    score_global  = float(numpy.clip(100 - drift_global  * 2.0, 0, 100))
+    score_max     = float(numpy.clip(100 - drift_max     * 1.8, 0, 100))
+    score_grad    = float(numpy.clip(100 - grad_bordure  * 1.5, 0, 100))
+    score         = score_global * 0.40 + score_max * 0.40 + score_grad * 0.20
+
     return score, {
-        "border_mean": [round(float(v), 1) for v in border_mean],
-        "center_mean": [round(float(v), 1) for v in center_mean],
-        "edge_drift":  round(drift, 1),
+        "border_mean"   : [round(float(v), 1) for v in border_mean],
+        "center_mean"   : [round(float(v), 1) for v in center_mean],
+        "edge_drift"    : round(drift_global, 1),
+        "max_side_drift": round(drift_max, 1),
+        "grad_bordure"  : round(grad_bordure, 1),
+        "score_detail"  : {
+            "global": round(score_global, 1),
+            "max_bord": round(score_max, 1),
+            "gradient": round(score_grad, 1),
+        },
     }
 
 

@@ -66,7 +66,18 @@ T = {
     "Strength:"                         : "Intensité :",
 
     # ── PANNEAU COLOR NORMALIZE ────────────────────────────────────
-    "Color Normalize"                   : "Normalisation couleurs",
+    # ── TIMELINE / BENCHMARK (Phase 3) ────────────────────────────
+    "⏱ Timeline"                        : "⏱ Chronologie",
+    "⏱ Timeline — Durées du build"      : "⏱ Chronologie — Durées du build",
+    "Timeline non disponible."          : "Chronologie non disponible.",
+    "Fermer"                            : "Fermer",
+    "Step 1 — Vectors"                  : "Étape 1 — Vecteurs",
+    "Step 2 — Mesh"                     : "Étape 2 — Maillage",
+    "Step 2.5 — Masks"                  : "Étape 2.5 — Masques",
+    "Step 3 — DSF/Imagery"              : "Étape 3 — DSF/Imagerie",
+    "Build All"                         : "Tout construire",
+
+        "Color Normalize"                   : "Normalisation couleurs",
     "RGB adjustments, sharpness, saturation"
                                         : "Corrections R.G.B., Netteté, saturation",
     "Réf: "                             : "Réf : ",

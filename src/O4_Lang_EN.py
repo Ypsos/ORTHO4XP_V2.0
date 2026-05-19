@@ -70,6 +70,17 @@ T = {
                                         : "RGB adjustments, sharpness, saturation",
     "Réf: "                             : "Ref: ",
 
+    # ── TIMELINE / BENCHMARK (Phase 3) ────────────────────────────
+    "⏱ Timeline"                        : "⏱ Timeline",
+    "⏱ Timeline — Durées du build"      : "⏱ Timeline — Build durations",
+    "Timeline non disponible."          : "Timeline not available.",
+    "Fermer"                            : "Close",
+    "Step 1 — Vectors"                  : "Step 1 — Vectors",
+    "Step 2 — Mesh"                     : "Step 2 — Mesh",
+    "Step 2.5 — Masks"                  : "Step 2.5 — Masks",
+    "Step 3 — DSF/Imagery"              : "Step 3 — DSF/Imagery",
+    "Build All"                         : "Build All",
+
     # ── SIMULATOR ─────────────────────────────────────────────────
     "🎚 Visualisation réglages"         : "🎚 Settings Preview",
     "Survolez un curseur."              : "Hover over a slider.",

@@ -22,6 +22,36 @@ import O4_Color_Normalize as CNORM
 import O4_Color_Check as CC
 from O4_Lang import tr
 
+# ── Nouveaux modules Phase 3 (non bloquants) ─────────────────────────────
+try:
+    from O4_Benchmark import Timeline as _Timeline
+    _timeline_enabled = True
+except Exception:
+    _timeline_enabled = False
+    class _Timeline:
+        def start(self, *a): pass
+        def end(self, *a):   pass
+        def report(self):    pass
+
+try:
+    from O4_Score_Logger import ScoreLogger as _ScoreLogger
+    _score_logger_gui = _ScoreLogger(auto_persist=False)
+    _score_logger_enabled = True
+except Exception:
+    _score_logger_enabled = False
+    _score_logger_gui = None
+
+try:
+    from O4_Memory_Manager import memory_stats as _memory_stats
+    _mem_enabled = True
+except Exception:
+    _mem_enabled = False
+    def _memory_stats(): return {}
+
+# Instance Timeline globale partagée pour toute la session GUI
+_build_timeline = _Timeline()
+# ─────────────────────────────────────────────────────────────────────────
+
 # --- THEME ---
 _BG     = "#3b5b49"
 _FG     = "#e8f0ec"
@@ -71,18 +101,43 @@ class Ortho4XP_GUI(tk.Tk):
 
         # ── Styles ttk ────────────────────────────────────────────────
         O4 = ttk.Style()
+        # macOS : "alt" préserve mieux les couleurs de texte que "default"
+        # Sur macOS sombre le thème natif écrase les couleurs → on force tout
         O4.theme_use("alt")
+        # TButton — foreground forcé pour macOS (texte visible sur fond foncé)
+        O4.configure("TButton",
+            background=_BTN_BG, foreground=_BTN_FG,
+            relief="raised", borderwidth=1)
+        O4.map("TButton",
+            background=[("active",   _ACCENT),
+                        ("pressed",  _BG),
+                        ("disabled", _BG)],
+            foreground=[("active",   "#1e3028"),
+                        ("pressed",  _BTN_FG),
+                        ("disabled", "#888888")])
         O4.configure("Flat.TButton",
-            background=_BG, highlightbackground=_BG,
+            background=_BG, foreground=_BTN_FG,
+            highlightbackground=_BG,
             selectbackground=_BG, highlightcolor=_BG,
             highlightthickness=0, relief="flat")
         O4.map("Flat.TButton",
-            background=[("disabled","pressed","!focus","active",_BG)])
+            background=[("disabled","pressed","!focus","active",_BG)],
+            foreground=[("disabled", "#888888"),
+                        ("active",   _BTN_FG),
+                        ("pressed",  _BTN_FG)])
         O4.configure("O4.TCombobox",
             selectbackground="white", selectforeground="#1e3028",
             fieldbackground="white", foreground="#1e3028", background="white")
         O4.map("O4.TCombobox",
             fieldbackground=[("disabled","!focus","focus","active","white")])
+        # macOS : forcer couleur texte globale pour tous les widgets tk natifs
+        if OsX:
+            self.option_add("*Button.foreground",   _BTN_FG)
+            self.option_add("*Button.background",   _BTN_BG)
+            self.option_add("*Button.activeforeground", "#1e3028")
+            self.option_add("*Button.activebackground", _ACCENT)
+            self.option_add("*Label.foreground",    _FG)
+            self.option_add("*Label.background",    _BG)
         self.option_add("*Font", f"TkFixedFont {fs(11)}")
 
         # ── UI global ─────────────────────────────────────────────────
@@ -290,13 +345,25 @@ class Ortho4XP_GUI(tk.Tk):
             font=("TkFixedFont", fs(11), "bold"))
         self.cnorm_ref_label.grid(row=0, column=5, padx=10, sticky=W+E)
 
-        # ── LIGNE 2 :  Color Check ───
-
-               # Bouton Color Check (réduit + désactive Enable avant d'ouvrir)
+        # ── LIGNE 2 :  Color Check + Timeline + RAM ────────────────────
         ttk.Button(self.frame_cnorm,
             text=tr("RGB adjustments, sharpness, saturation"),
             command=self.open_color_check,
             width=32).grid(row=1, column=3, padx=5, pady=(8,4))
+
+        # Bouton Timeline — affiche le rapport des durées d'étapes
+        ttk.Button(self.frame_cnorm,
+            text=tr("⏱ Timeline"),
+            command=self._show_timeline,
+            width=12).grid(row=1, column=4, padx=5, pady=(8,4))
+
+        # Label RAM live
+        self._ram_label = tk.Label(self.frame_cnorm,
+            text="RAM: --",
+            bg=_BG, fg=_FG2,
+            font=("TkFixedFont", fs(10)))
+        self._ram_label.grid(row=1, column=5, padx=8, sticky=W)
+        self._update_ram_label()
 
         # ── CONSOLE (row=1 principal — extensible) ─────────────────────
         self.frame_console = tk.Frame(self, border=4, relief=RIDGE, bg=_BG)
@@ -368,6 +435,54 @@ class Ortho4XP_GUI(tk.Tk):
     def update_cnorm_strength(self, value):
         CNORM.CORRECTION_STRENGTH = int(value) / 100.0
         self.cnorm_pct_label.config(text=str(value) + "%")
+
+    def _show_timeline(self):
+        """Affiche le rapport Timeline dans une fenêtre popup."""
+        try:
+            _reload_theme()
+            win = tk.Toplevel(self)
+            win.title(tr("⏱ Timeline — Durées du build"))
+            win.configure(bg=_BG)
+            win.geometry("520x320")
+            win.resizable(True, True)
+            txt = tk.Text(win, bg=_CON_BG, fg=_CON_FG,
+                          font=("Courier", 11), bd=0, wrap="none")
+            txt.pack(fill="both", expand=True, padx=8, pady=8)
+            report = _build_timeline.report() if _timeline_enabled else tr("Timeline non disponible.")
+            txt.insert("1.0", report)
+            txt.config(state="disabled")
+            # Bouton fermer
+            ttk.Button(win, text=tr("Fermer"), command=win.destroy).pack(pady=4)
+        except Exception as e:
+            print(f"[Timeline] Erreur affichage : {e}")
+
+    def _update_ram_label(self):
+        """
+        Met à jour le label RAM toutes les 10 secondes.
+        psutil est appelé dans un thread séparé pour ne jamais
+        bloquer le thread tkinter principal (évite le gel de l'UI).
+        """
+        def _fetch():
+            try:
+                if _mem_enabled:
+                    stats = _memory_stats()
+                    pct   = stats.get("ram_percent", 0)
+                    avail = stats.get("ram_available_gb", 0)
+                    color = "#ff5555" if pct > 80 else "#50fa7b" if pct < 60 else "#ffb86c"
+                    # Retour dans le thread tkinter via after(0)
+                    self.after(0, lambda: self._apply_ram_label(
+                        f"RAM: {pct:.0f}%  ({avail:.1f}Go)", color))
+            except Exception:
+                pass
+        threading.Thread(target=_fetch, daemon=True).start()
+        self.after(10000, self._update_ram_label)
+
+    def _apply_ram_label(self, text, color):
+        """Applique le texte RAM dans le thread tkinter — non bloquant."""
+        try:
+            self._ram_label.config(text=text, fg=color)
+        except Exception:
+            pass
 
     def open_color_check(self):
         # Désactive Color Normalize et décoche la case avant d'ouvrir
@@ -450,10 +565,20 @@ class Ortho4XP_GUI(tk.Tk):
 
     # ── Build ──────────────────────────────────────────────────────────
     def build_poly_file(self):
-        threading.Thread(target=VMAP.build_poly_file, args=[self.tile_from_interface()]).start()
+        tile = self.tile_from_interface()
+        _build_timeline.start(tr("Step 1 — Vectors"))
+        def _run():
+            VMAP.build_poly_file(tile)
+            _build_timeline.end(tr("Step 1 — Vectors"))
+        threading.Thread(target=_run).start()
 
     def build_mesh(self, event=None):
-        threading.Thread(target=MESH.build_mesh, args=[self.tile_from_interface()]).start()
+        tile = self.tile_from_interface()
+        _build_timeline.start(tr("Step 2 — Mesh"))
+        def _run():
+            MESH.build_mesh(tile)
+            _build_timeline.end(tr("Step 2 — Mesh"))
+        threading.Thread(target=_run).start()
 
     def sort_mesh(self, event=None):
         try: threading.Thread(target=MESH.sort_mesh, args=[self.tile_from_interface()]).start()
@@ -464,13 +589,30 @@ class Ortho4XP_GUI(tk.Tk):
         except: pass
 
     def build_masks(self, event=None):
-        threading.Thread(target=MASK.build_masks, args=[self.tile_from_interface()]).start()
+        tile = self.tile_from_interface()
+        _build_timeline.start(tr("Step 2.5 — Masks"))
+        def _run():
+            MASK.build_masks(tile)
+            _build_timeline.end(tr("Step 2.5 — Masks"))
+        threading.Thread(target=_run).start()
 
     def build_tile(self):
-        threading.Thread(target=TILE.build_tile, args=[self.tile_from_interface()]).start()
+        tile = self.tile_from_interface()
+        _build_timeline.start(tr("Step 3 — DSF/Imagery"))
+        def _run():
+            TILE.build_tile(tile)
+            _build_timeline.end(tr("Step 3 — DSF/Imagery"))
+            _build_timeline.report()
+        threading.Thread(target=_run).start()
 
     def build_all(self):
-        threading.Thread(target=TILE.build_all, args=[self.tile_from_interface()]).start()
+        tile = self.tile_from_interface()
+        _build_timeline.start(tr("Build All"))
+        def _run():
+            TILE.build_all(tile)
+            _build_timeline.end(tr("Build All"))
+            _build_timeline.report()
+        threading.Thread(target=_run).start()
 
     def get_lat_lon(self):
         lat = int(self.lat.get() or 48)
@@ -2008,6 +2150,11 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         (lat, lon) = [floor(t) for t in GEO.pix_to_wgs84(x, y, self.earthzl)]
+        # V3.2 — Mettre à jour active_lat/active_lon pour que Delete fonctionne
+        # sur la tuile visible, même sans double-clic préalable
+        self.active_lat = lat
+        self.active_lon = lon
+        self.latlon.set(FNAMES.short_latlon(lat, lon))
         if (lat, lon) not in self.dico_tiles_todo:
             [x0, y0] = GEO.wgs84_to_pix(lat + 1, lon, self.earthzl)
             [x1, y1] = GEO.wgs84_to_pix(lat, lon + 1, self.earthzl)

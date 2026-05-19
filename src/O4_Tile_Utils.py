@@ -366,6 +366,26 @@ def build_all(tile):
     return 1
 
 ################################################################################
+def _cleanup_corrupt_dsf(tile):
+    """
+    Supprime le fichier DSF .tmp corrompu si présent.
+    Appelé automatiquement avant chaque tuile batch pour éviter le blocage
+    du validateur DSF au relancement. Modification minimale V3.2.
+    """
+    dsf_tmp = os.path.join(
+        tile.build_dir,
+        "Earth nav data",
+        FNAMES.long_latlon(tile.lat, tile.lon) + ".dsf.tmp",
+    )
+    if os.path.isfile(dsf_tmp):
+        try:
+            os.remove(dsf_tmp)
+            UI.vprint(1, f"   [Batch] DSF .tmp corrompu supprimé : {os.path.basename(dsf_tmp)}")
+        except Exception as e:
+            UI.vprint(2, f"   [Batch] Impossible de supprimer DSF .tmp : {e}")
+
+
+################################################################################
 def build_tile_list(
     tile, list_lat_lon, do_osm, do_mesh, do_mask, do_dsf, do_ovl, do_ptc
 ):
@@ -373,6 +393,7 @@ def build_tile_list(
         return 0
     UI.red_flag = 0
     timer = time.time()
+    skipped = []  # V3.2 — tuiles ignorées après erreur
     UI.lvprint(
         0, "Batch build launched for a number of", len(list_lat_lon), "tiles."
     )
@@ -397,31 +418,46 @@ def build_tile_list(
             tile.read_from_config()
         if do_osm or do_mesh or do_dsf:
             tile.make_dirs()
+        # V3.2 — Nettoyer DSF .tmp corrompu avant chaque tuile
+        if do_dsf:
+            _cleanup_corrupt_dsf(tile)
         if do_osm:
             VMAP.build_poly_file(tile)
             if UI.red_flag:
-                UI.exit_message_and_bottom_line()
-                return 0
+                # V3.2 — Skip cette tuile, continuer le batch
+                UI.vprint(0, f"   [Batch] Tuile {FNAMES.short_latlon(lat, lon)} ignorée (erreur OSM) — batch continue.")
+                skipped.append((lat, lon))
+                UI.red_flag = False
+                continue
         if do_mesh:
             MESH.build_mesh(tile)
             if UI.red_flag:
-                UI.exit_message_and_bottom_line()
-                return 0
+                UI.vprint(0, f"   [Batch] Tuile {FNAMES.short_latlon(lat, lon)} ignorée (erreur mesh) — batch continue.")
+                skipped.append((lat, lon))
+                UI.red_flag = False
+                continue
         if do_mask:
             MASK.build_masks(tile)
             if UI.red_flag:
-                UI.exit_message_and_bottom_line()
-                return 0
+                UI.vprint(0, f"   [Batch] Tuile {FNAMES.short_latlon(lat, lon)} ignorée (erreur masque) — batch continue.")
+                skipped.append((lat, lon))
+                UI.red_flag = False
+                continue
         if do_dsf:
             build_tile(tile)
             if UI.red_flag:
-                UI.exit_message_and_bottom_line()
-                return 0
+                UI.vprint(0, f"   [Batch] Tuile {FNAMES.short_latlon(lat, lon)} ignorée (erreur DSF/imagery) — batch continue.")
+                _cleanup_corrupt_dsf(tile)  # Nettoyer le .tmp de cette tuile
+                skipped.append((lat, lon))
+                UI.red_flag = False
+                continue
         if do_ovl:
             OVL.build_overlay(lat, lon)
             if UI.red_flag:
-                UI.exit_message_and_bottom_line()
-                return 0
+                UI.vprint(0, f"   [Batch] Tuile {FNAMES.short_latlon(lat, lon)} ignorée (erreur overlay) — batch continue.")
+                skipped.append((lat, lon))
+                UI.red_flag = False
+                continue
         try:
             UI.gui.earth_window.canvas.delete(
                 UI.gui.earth_window.dico_tiles_todo[(lat, lon)]
@@ -429,6 +465,11 @@ def build_tile_list(
             UI.gui.earth_window.dico_tiles_todo.pop((lat, lon), None)
         except:
             pass
+    # V3.2 — Rapport final batch
+    if skipped:
+        UI.lvprint(0, f"Batch terminé avec {len(skipped)} tuile(s) ignorée(s) :")
+        for (slat, slon) in skipped:
+            UI.lvprint(0, f"  ⚠ {FNAMES.short_latlon(slat, slon)}")
     UI.lvprint(
         0, "Batch process completed in", UI.nicer_timer(time.time() - timer)
     )

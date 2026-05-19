@@ -2169,19 +2169,6 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
         )
         true_im = Image.open(os.path.join(true_file_dir, true_file_name))
         UI.vprint(2, "Imprinting for provider", rlayer, til_x_left, til_y_top)
-        # ── SEA FILL : boucher blancs mer via EOX avant Color Normalize ──
-        try:
-            import O4_Sea_Texture as _SEA
-            _jpg_path = os.path.join(true_file_dir, true_file_name)
-            _dico_sea = _get_dico_sea(tile)
-            _filled = _SEA.process_sea_fill(
-                tile, true_til_x_left, true_til_y_top, true_zl,
-                rlayer["layer_code"], _jpg_path, _dico_sea)
-            if _filled is not None:
-                true_im = _filled
-        except Exception as _se:
-            UI.vprint(2, f"   [SeaTex] pipeline : {_se}")
-        # ─────────────────────────────────────────────────────────────
         true_im = color_transform(true_im, rlayer["color_code"])
         # ── COLOR NORMALIZE par source avant assemblage ───────────────
         true_im = CNORM.normalize_if_enabled(
