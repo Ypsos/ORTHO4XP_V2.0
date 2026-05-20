@@ -49,27 +49,35 @@ def build_sea_texture_set(tile, dico_customzl):
             111.12 * math.cos(math.radians(tile.lat + 0.5))
         )
 
-        # Collecter les positions lon/lat approximatives des JPG existants
+        # Collecter les positions lon/lat des JPG existants
+        # Même logique que build_jpeg_ortho : via layers du combined provider
         existing_jpg_pos = []
         for key, tex_attr in dico_customzl.items():
             (til_x, til_y, zl, provider_code) = tex_attr
-            layers = IMG.local_combined_providers_dict.get(provider_code, [])
-            for rlayer in layers:
+            found = False
+            for rlayer in IMG.local_combined_providers_dict.get(provider_code, []):
                 lc = rlayer.get("layer_code", "")
                 if lc not in IMG.providers_dict:
                     continue
-                fname = FNAMES.jpeg_file_name_from_attributes(
-                    til_x, til_y, zl, lc)
+                true_x, true_y, true_zl = til_x, til_y, zl
+                if "max_zl" in IMG.providers_dict[lc]:
+                    mzl = int(IMG.providers_dict[lc]["max_zl"])
+                    if mzl < zl:
+                        (latm, lonm) = GEO.gtile_to_wgs84(til_x+8, til_y+8, zl)
+                        (true_x, true_y) = GEO.wgs84_to_orthogrid(latm, lonm, mzl)
+                        true_zl = mzl
                 fdir = FNAMES.jpeg_file_dir_from_attributes(
-                    tile.lat, tile.lon, zl, IMG.providers_dict[lc])
+                    tile.lat, tile.lon, true_zl, IMG.providers_dict[lc])
+                fname = FNAMES.jpeg_file_name_from_attributes(true_x, true_y, true_zl, lc)
                 if os.path.isfile(os.path.join(fdir, fname)):
-                    n = 2 ** zl
-                    lon_approx = til_x / n * 360.0 - 180.0
-                    lat_approx = math.degrees(
-                        math.atan(math.sinh(math.pi * (1 - 2 * til_y / n)))
-                    )
-                    existing_jpg_pos.append((lat_approx, lon_approx))
-                break
+                    found = True
+                    break
+            if found:
+                n = 2 ** zl
+                existing_jpg_pos.append((
+                    math.degrees(math.atan(math.sinh(math.pi*(1-2*til_y/n)))),
+                    til_x / n * 360.0 - 180.0
+                ))
 
         if not existing_jpg_pos:
             return sea_set
@@ -96,17 +104,22 @@ def build_sea_texture_set(tile, dico_customzl):
             tex_attr = dico_customzl[key]
             (til_x, til_y, zl, provider_code) = tex_attr
 
-            # Vérifier que le JPG est absent
+            # Vérifier que le JPG est absent — même logique que build_jpeg_ortho
             jpg_exists = False
-            layers = IMG.local_combined_providers_dict.get(provider_code, [])
-            for rlayer in layers:
+            for rlayer in IMG.local_combined_providers_dict.get(provider_code, []):
                 lc = rlayer.get("layer_code", "")
                 if lc not in IMG.providers_dict:
                     continue
-                fname = FNAMES.jpeg_file_name_from_attributes(
-                    til_x, til_y, zl, lc)
+                true_x, true_y, true_zl = til_x, til_y, zl
+                if "max_zl" in IMG.providers_dict[lc]:
+                    mzl = int(IMG.providers_dict[lc]["max_zl"])
+                    if mzl < zl:
+                        (latm, lonm) = GEO.gtile_to_wgs84(til_x+8, til_y+8, zl)
+                        (true_x, true_y) = GEO.wgs84_to_orthogrid(latm, lonm, mzl)
+                        true_zl = mzl
                 fdir = FNAMES.jpeg_file_dir_from_attributes(
-                    tile.lat, tile.lon, zl, IMG.providers_dict[lc])
+                    tile.lat, tile.lon, true_zl, IMG.providers_dict[lc])
+                fname = FNAMES.jpeg_file_name_from_attributes(true_x, true_y, true_zl, lc)
                 if os.path.isfile(os.path.join(fdir, fname)):
                     jpg_exists = True
                 break
@@ -210,6 +223,19 @@ def build_tile(tile):
 
     tile.write_to_config()
 
+    # V3.2 — Créer dossier JPG-Patch avant initialize (provider PATCH injecté si dossier présent)
+    try:
+        import O4_File_Names as _FN
+        _sign_lat = "+" if tile.lat >= 0 else "-"
+        _sign_lon = "+" if tile.lon >= 0 else "-"
+        _tile_key = f"{_sign_lat}{abs(int(tile.lat)):02d}{_sign_lon}{abs(int(tile.lon)):03d}"
+        _zl = getattr(tile, "default_zl", 17)
+        _patch_dir = os.path.join(_FN.Imagery_dir, "JPG-Patch", _tile_key, f"JPG-Patch_{_zl}")
+        os.makedirs(_patch_dir, exist_ok=True)
+        UI.vprint(1, f"   [SeaTex] Dossier JPG-Patch créé : {_patch_dir}")
+    except Exception as _e:
+        UI.vprint(2, f"   [SeaTex] Dossier JPG-Patch erreur : {_e}")
+
     if not IMG.initialize_local_combined_providers_dict(tile):
         UI.exit_message_and_bottom_line("")
         return 0
@@ -257,21 +283,33 @@ def build_tile(tile):
         dico_customzl = DSF.zone_list_to_ortho_dico(tile)
         sea_texture_set = build_sea_texture_set(tile, dico_customzl)
     except Exception as _ste:
-        UI.vprint(2, f"   [SeaTex] sea_texture_set non construit : {_ste}")
+        import traceback
+        UI.vprint(0, f"   [SeaTex] sea_texture_set ERREUR : {_ste}\n{traceback.format_exc()}")
         sea_texture_set = None
 
-    # V3.2 — Pré-générer JPG-Patch AVANT les threads
+    # V3.2 — Pré-générer JPG-Patch AVANT les threads download/convert
     if sea_texture_set:
         try:
             import O4_Sea_Texture as _SEA
             UI.vprint(1, f"   [SeaTex] Génération JPG-Patch pour {len(sea_texture_set)} tuile(s)...")
             for _ta in sea_texture_set:
                 (tx, ty, zl, prov) = _ta
-                _ly = IMG.local_combined_providers_dict.get(prov, [])
-                if not _ly and prov in IMG.providers_dict:
-                    _ly = [{"layer_code": prov}]
-                _li = [(_rl["layer_code"], IMG.providers_dict[_rl["layer_code"]]) for _rl in _ly if _rl.get("layer_code","") in IMG.providers_dict]
-                _SEA.generate_sea_jpg(tile, tx, ty, zl, prov, _li)
+                _jpg = _SEA.generate_sea_jpg(tile, tx, ty, zl, prov,
+                                             dico_customzl=dico_customzl)
+                # V3.2 — Copier dans le dossier provider pour build_jpeg_ortho
+                if _jpg and os.path.isfile(_jpg):
+                    try:
+                        _pdir = FNAMES.jpeg_file_dir_from_attributes(
+                            tile.lat, tile.lon, zl, IMG.providers_dict[prov])
+                        os.makedirs(_pdir, exist_ok=True)
+                        _pname = FNAMES.jpeg_file_name_from_attributes(
+                            tx, ty, zl, "PATCH")
+                        _pdest = os.path.join(_pdir, _pname)
+                        if not os.path.isfile(_pdest):
+                            import shutil as _sh
+                            _sh.copy2(_jpg, _pdest)
+                    except Exception as _ce:
+                        UI.vprint(2, f"   [SeaTex] Copie PATCH→provider : {_ce}")
         except Exception as _pre:
             import traceback
             UI.vprint(0, f"   [SeaTex] Pré-génération ERREUR : {_pre}\n{traceback.format_exc()}")

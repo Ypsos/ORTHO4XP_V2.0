@@ -888,8 +888,8 @@ def initialize_local_combined_providers_dict(tile):
                                   "PATCH_" + str(_zl))
         if os.path.isdir(_patch_dir):
             _img_dir = os.path.join("JPG-Patch", _tile_key)
-            providers_dict["PATCH"] = {
-                "code"        : "PATCH",
+            providers_dict["JPG-Patch"] = {
+                "code"        : "JPG-Patch",
                 "request_type": "local_tms",
                 "image_type"  : "jpeg",
                 "imagery_dir" : _img_dir,
@@ -898,10 +898,10 @@ def initialize_local_combined_providers_dict(tile):
                 "in_GUI"      : False,
                 "url_template": "",
             }
-            _patch_layer = {"layer_code":"PATCH","extent_code":"global",
+            _patch_layer = {"layer_code":"JPG-Patch","extent_code":"global",
                             "color_code":"none","priority":"low"}
             for _pc in list(local_combined_providers_dict.keys()):
-                if not any(l["layer_code"]=="PATCH" for l in local_combined_providers_dict[_pc]):
+                if not any(l["layer_code"]=="JPG-Patch" for l in local_combined_providers_dict[_pc]):
                     local_combined_providers_dict[_pc] = [_patch_layer] + local_combined_providers_dict[_pc]
             UI.vprint(1, "   [SeaTex] Provider PATCH injecté.")
     except Exception as _pe:

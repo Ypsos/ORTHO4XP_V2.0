@@ -426,7 +426,7 @@ def _tile_folder(tile):
 
 
 def generate_sea_jpg(tile, til_x_left, til_y_top, zoomlevel, provider_code,
-                     neighbor_colors=None):
+                     neighbor_colors=None, jpeg_dir=None, dico_customzl=None):
     """
     Génère un JPG fond marin 4096×4096 dans :
       Orthophotos/JPG-Patch/+46-003/PATCH_{zoomlevel}/
@@ -440,29 +440,61 @@ def generate_sea_jpg(tile, til_x_left, til_y_top, zoomlevel, provider_code,
     Appelé par build_tile() dans O4_Tile_Utils.py.
     """
     try:
+        # jpeg_file_dir_from_attributes construit Imagery_dir/imagery_dir/ZL{zl}
+        # donc on génère dans PATCH_{zl}/ZL{zl}/ pour cohérence
         patch_dir = os.path.join(
             FNAMES.Imagery_dir,
             "JPG-Patch",
             _tile_folder(tile),
-            f"PATCH_{int(zoomlevel)}"
+            f"JPG-Patch_{int(zoomlevel)}"
         )
         os.makedirs(patch_dir, exist_ok=True)
 
-        jpg_name = (
-            f"{int(til_y_top)}_{int(til_x_left)}"
-            f"_ZL{int(zoomlevel)}_PATCH.jpg"
-        )
+        # Format Ortho4XP standard : {tx}_{ty}_{provider}{zl}.jpg
+        jpg_name = f"{int(til_x_left)}_{int(til_y_top)}_JPG-Patch{int(zoomlevel)}.jpg"
         jpg_path = os.path.join(patch_dir, jpg_name)
 
         if os.path.isfile(jpg_path):
             UI.vprint(1, f"   [SeaTex] JPG-Patch cache : {jpg_name}")
             return jpg_path
 
-        # ── Couleur de base ───────────────────────────────────────────────────
-        if neighbor_colors and len(neighbor_colors) > 0:
+        # ── Couleur voisins depuis dico_customzl (provider mesh) ─────────────
+        if not neighbor_colors and dico_customzl:
+            neighbor_colors = []
+            try:
+                import O4_Imagery_Utils as _IMG
+                for (dx, dy) in [(-16,0),(16,0),(0,-16),(0,16)]:
+                    vx = int(til_x_left) + dx
+                    vy = int(til_y_top)  + dy
+                    # Trouver la clé mesh_zl correspondante
+                    for key, val in dico_customzl.items():
+                        (vtx, vty, vzl, vprov) = val
+                        if vtx == vx and vty == vy and vzl == int(zoomlevel):
+                            # Chercher le JPG dans le dossier du bon provider
+                            if vprov in _IMG.providers_dict:
+                                _vdir = FNAMES.jpeg_file_dir_from_attributes(
+                                    tile.lat, tile.lon, vzl,
+                                    _IMG.providers_dict[vprov])
+                                _vname = FNAMES.jpeg_file_name_from_attributes(
+                                    vtx, vty, vzl, vprov)
+                                _vpath = os.path.join(_vdir, _vname)
+                                if os.path.isfile(_vpath):
+                                    try:
+                                        va = numpy.array(
+                                            Image.open(_vpath).convert("RGB"))
+                                        neighbor_colors.append(
+                                            tuple(int(x) for x in va.mean(axis=(0,1))))
+                                    except Exception:
+                                        pass
+                            break
+            except Exception:
+                pass
+        if neighbor_colors:
             r = int(numpy.mean([c[0] for c in neighbor_colors]))
             g = int(numpy.mean([c[1] for c in neighbor_colors]))
             b = int(numpy.mean([c[2] for c in neighbor_colors]))
+            UI.vprint(2, f"   [SeaTex] Couleur voisins RGB({r},{g},{b})"
+                         f" — {len(neighbor_colors)} source(s)")
         else:
             r, g, b = 42, 68, 95  # bleu maritime XP12 par défaut
 
@@ -488,7 +520,8 @@ def generate_sea_jpg(tile, til_x_left, til_y_top, zoomlevel, provider_code,
         return jpg_path
 
     except Exception as e:
-        UI.vprint(0, f"   [SeaTex] generate_sea_jpg ERREUR : {e}")
+        import traceback
+        UI.vprint(0, f"   [SeaTex] generate_sea_jpg ERREUR : {e} | {traceback.format_exc()}")
         return None
 
 
@@ -502,12 +535,9 @@ def _get_sea_tile_for_tile(tile, til_x_left, til_y_top, zoomlevel):
         FNAMES.Imagery_dir,
         "JPG-Patch",
         _tile_folder(tile),
-        f"PATCH_{int(zoomlevel)}"
+        f"JPG-Patch_{int(zoomlevel)}"
     )
-    jpg_name = (
-        f"{int(til_y_top)}_{int(til_x_left)}"
-        f"_ZL{int(zoomlevel)}_PATCH.jpg"
-    )
+    jpg_name = f"{int(til_x_left)}_{int(til_y_top)}_JPG-Patch{int(zoomlevel)}.jpg"
     jpg_path = os.path.join(patch_dir, jpg_name)
     if os.path.isfile(jpg_path):
         try:
@@ -522,15 +552,17 @@ def _get_sea_tile(til_x_left, til_y_top, zoomlevel):
     Version sans tile — parcourt les dossiers JPG-Patch existants.
     Compatibilité avec les appels existants dans O4_Imagery_Utils.py.
     """
-    base_dir = os.path.join(FNAMES.Imagery_dir, "JPG-Patch")
+    try:
+        base_dir = os.path.join(FNAMES.Imagery_dir, "JPG-Patch")
+    except Exception:
+        return None
     if not os.path.isdir(base_dir):
         return None
-    jpg_name = (
-        f"{int(til_y_top)}_{int(til_x_left)}"
-        f"_ZL{int(zoomlevel)}_PATCH.jpg"
-    )
-    for tile_folder in os.listdir(base_dir):
-        patch_dir = os.path.join(base_dir, tile_folder, f"PATCH_{int(zoomlevel)}")
+    jpg_name = f"{int(til_x_left)}_{int(til_y_top)}_JPG-Patch{int(zoomlevel)}.jpg"
+    for tile_folder in sorted(os.listdir(base_dir)):
+        if not os.path.isdir(os.path.join(base_dir, tile_folder)):
+            continue
+        patch_dir = os.path.join(base_dir, tile_folder, f"JPG-Patch_{int(zoomlevel)}")
         jpg_path  = os.path.join(patch_dir, jpg_name)
         if os.path.isfile(jpg_path):
             try:
