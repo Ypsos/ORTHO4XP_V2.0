@@ -29,7 +29,7 @@ T = {
     "Active tile"                       : "Tuile active",
     "Erase cached data"                 : "Vider le cache",
     "Batch build tiles"                 : "Construction en lot",
-    "  Batch Build   "                  : "  Build en lot   ",
+    "  Batch Build   "                  : "  Construction en lot  ",
     "  Delete    "                      : "  Supprimer    ",
     "    Refresh     "                  : "    Rafraîchir     ",
     "      Exit      "                  : "      Quitter      ",
@@ -207,11 +207,9 @@ T = {
                                         : "Clic+glisser = nouveau rectangle  |  Clic sur zone = sélectionner  |  Suppr = effacer",
     "Zones protégées"                   : "Zones protégées",
     "Étiquette :"                       : "Étiquette :",
-    "✏ Renommer sélect."               : "✏ Renommer sélect.",
     "🗑 Supprimer sélect."              : "🗑 Supprimer sélect.",
     "🗑 Tout effacer"                   : "🗑 Tout effacer",
     "Annuler"                           : "Annuler",
-    "Fermer"                            : "Fermer",
     "💡 Seam persistante : augmentez le rayon\\n"
                                         : "💡 Jointure persistante : augmentez le rayon\\n",
 
@@ -224,7 +222,6 @@ T = {
     "✓ Valeurs chargées depuis le cfg." : "✓ Valeurs chargées depuis le cfg.",
     "✅ Sauvegardé dans cfg tuile."     : "✅ Sauvegardé dans cfg tuile.",
     "✅ Sauvegardé dans cfg global."    : "✅ Sauvegardé dans cfg global.",
-    "↺  Recharger depuis cfg"           : "↺  Recharger depuis cfg",
 
     # ── MESSAGES CONSOLE / LOG ─────────────────────────────────────
     "-> Opening download queue."        : "-> Ouverture file de téléchargement.",
@@ -298,23 +295,9 @@ T = {
 
     # ── FENÊTRE CUSTOM ZOOMLEVELS / PREVIEW ───────────────────────
     "Preview / Custom zoomlevels"       : "Aperçu / Niveaux zoom custom",
-    "Tiles collection and management"   : "Collection et gestion des tuiles",
-    "Preview params "                   : "Paramètres aperçu ",
-    "Zone params "                      : "Paramètres zone ",
-    "Source : "                         : "Source : ",
-    "Zoomlevel : "                      : "Niveau zoom : ",
-    "Preview"                           : "Aperçu",
-    "Approx. Add. Size : "              : "Taille ajout approx. : ",
-    "  Save zone  "                     : "  Sauv. zone  ",
-    "Delete ZL zone"                    : "Suppr. zone ZL",
-    "Make GeoTiffs"                     : "Créer GeoTiffs",
-    "Extract Mesh "                     : "Extraire Mesh ",
-    "    Apply    "                     : "    Appliquer    ",
-    "    Reset    "                     : "    Réinitialiser    ",
-    "    Exit     "                     : "    Quitter     ",
+    "Tiles collection and management"   : "Sélection et gestion des tuiles",
     "Ctrl+B1 : add texture\\nShift+B1: add zone point\\n"
                                         : "Ctrl+B1 : ajouter texture\\nShift+B1 : point de zone\\n",
-    "Carte Earth non disponible\\n"   : "Carte Earth non disponible\\n",
 
     # ── TITRES SECTIONS FENÊTRE CONFIG ────────────────────────────
     "Vector data"                       : "Données vectorielles",

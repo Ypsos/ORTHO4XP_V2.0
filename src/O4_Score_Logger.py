@@ -184,17 +184,34 @@ class ScoreLogger:
     # ------------------------------------------------------------------
 
     def _persist_entry(self, entry):
-        """Ajoute l'entrée au fichier JSON de log interne."""
-        try:
-            existing = []
-            if os.path.isfile(_LOG_FILE):
-                with open(_LOG_FILE, "r", encoding="utf-8") as f:
-                    existing = json.load(f)
-            existing.append(entry)
-            with open(_LOG_FILE, "w", encoding="utf-8") as f:
-                json.dump(existing, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            _logwarn(f"Persistance échouée : {e}")
+        """
+        Ajoute l'entrée au fichier JSON de log interne.
+        V3.2 — Corrections :
+          - Verrou self._lock sur toute l'opération lecture+écriture
+            (évite la race condition entre les 4 workers parallèles)
+          - Ecriture atomique via fichier .tmp + os.replace()
+            (évite la corruption JSON si le process est interrompu)
+          - Recuperation propre si JSON corrompu sur disque (reset au lieu de crash)
+        """
+        with self._lock:   # V3.2 — un seul thread a la fois sur le fichier
+            try:
+                existing = []
+                if os.path.isfile(_LOG_FILE):
+                    try:
+                        with open(_LOG_FILE, "r", encoding="utf-8") as f:
+                            existing = json.load(f)
+                    except (json.JSONDecodeError, ValueError):
+                        # V3.2 — JSON corrompu -> reset propre, log continue
+                        _logwarn("Fichier log JSON corrompu detecte — reinitialise.")
+                        existing = []
+                existing.append(entry)
+                # V3.2 — ecriture atomique : .tmp puis rename (os.replace)
+                _tmp = _LOG_FILE + ".tmp"
+                with open(_tmp, "w", encoding="utf-8") as f:
+                    json.dump(existing, f, indent=2, ensure_ascii=False)
+                os.replace(_tmp, _LOG_FILE)
+            except Exception as e:
+                _logwarn(f"Persistance echouee : {e}")
 
     # ------------------------------------------------------------------
     # Export CSV

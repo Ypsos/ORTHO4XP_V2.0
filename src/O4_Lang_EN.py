@@ -206,11 +206,9 @@ T = {
                                         : "Click+drag = new rectangle  |  Click zone = select  |  Del = erase",
     "Zones protégées"                   : "Protected zones",
     "Étiquette :"                       : "Label:",
-    "✏ Renommer sélect."               : "✏ Rename selected",
     "🗑 Supprimer sélect."              : "🗑 Delete selected",
     "🗑 Tout effacer"                   : "🗑 Clear all",
     "Annuler"                           : "Cancel",
-    "Fermer"                            : "Close",
     "💡 Seam persistante : augmentez le rayon\\n"
                                         : "💡 Persistent seam: increase the radius\\n",
 
@@ -223,7 +221,6 @@ T = {
     "✓ Valeurs chargées depuis le cfg." : "✓ Values loaded from cfg.",
     "✅ Sauvegardé dans cfg tuile."     : "✅ Saved to tile cfg.",
     "✅ Sauvegardé dans cfg global."    : "✅ Saved to global cfg.",
-    "↺  Recharger depuis cfg"           : "↺  Reload from cfg",
 
     # ── CONSOLE / LOG MESSAGES ─────────────────────────────────────
     "-> Opening download queue."        : "-> Opening download queue.",
@@ -298,22 +295,8 @@ T = {
     # ── FENÊTRE CUSTOM ZOOMLEVELS / PREVIEW ───────────────────────
     "Preview / Custom zoomlevels"       : "Preview / Custom zoomlevels",
     "Tiles collection and management"   : "Tiles collection and management",
-    "Preview params "                   : "Preview params ",
-    "Zone params "                      : "Zone params ",
-    "Source : "                         : "Source: ",
-    "Zoomlevel : "                      : "Zoomlevel: ",
-    "Preview"                           : "Preview",
-    "Approx. Add. Size : "              : "Approx. Add. Size: ",
-    "  Save zone  "                     : "  Save zone  ",
-    "Delete ZL zone"                    : "Delete ZL zone",
-    "Make GeoTiffs"                     : "Make GeoTiffs",
-    "Extract Mesh "                     : "Extract Mesh ",
-    "    Apply    "                     : "    Apply    ",
-    "    Reset    "                     : "    Reset    ",
-    "    Exit     "                     : "    Exit     ",
     "Ctrl+B1 : add texture\\nShift+B1: add zone point\\n"
                                         : "Ctrl+B1: add texture\\nShift+B1: add zone point\\n",
-    "Carte Earth non disponible\\n"   : "Earth map unavailable\\n",
 
     # ── CONFIG WINDOW SECTION TITLES ──────────────────────────────
     "Vector data"                       : "Vector data",

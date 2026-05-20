@@ -879,6 +879,33 @@ def initialize_local_combined_providers_dict(tile):
             else:
                 new_comb_list.append(rlayer)
         local_combined_providers_dict[provider_code] = new_comb_list
+    # Injecter PATCH provider si dossier JPG-Patch/{+lat-lon}/PATCH_{zl} existe
+    try:
+        import O4_File_Names as _FN
+        _zl = getattr(tile, "default_zl", 17)
+        _tile_key = _FN.short_latlon(tile.lat, tile.lon)
+        _patch_dir = os.path.join(_FN.Imagery_dir, "JPG-Patch", _tile_key,
+                                  "PATCH_" + str(_zl))
+        if os.path.isdir(_patch_dir):
+            _img_dir = os.path.join("JPG-Patch", _tile_key)
+            providers_dict["PATCH"] = {
+                "code"        : "PATCH",
+                "request_type": "local_tms",
+                "image_type"  : "jpeg",
+                "imagery_dir" : _img_dir,
+                "extent"      : "global",
+                "color_filters": "none",
+                "in_GUI"      : False,
+                "url_template": "",
+            }
+            _patch_layer = {"layer_code":"PATCH","extent_code":"global",
+                            "color_code":"none","priority":"low"}
+            for _pc in list(local_combined_providers_dict.keys()):
+                if not any(l["layer_code"]=="PATCH" for l in local_combined_providers_dict[_pc]):
+                    local_combined_providers_dict[_pc] = [_patch_layer] + local_combined_providers_dict[_pc]
+            UI.vprint(1, "   [SeaTex] Provider PATCH injecté.")
+    except Exception as _pe:
+        UI.vprint(2, f"   [SeaTex] Injection PATCH : {_pe}")
     UI.vprint(2, "     Done.")
     return 1
 

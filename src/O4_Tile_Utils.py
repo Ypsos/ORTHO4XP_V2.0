@@ -150,8 +150,18 @@ def download_textures(tile, download_queue, convert_queue, sea_texture_set=None)
                 2, int(100 * done / (done + download_queue.qsize()))
             )
             convert_queue.put((tile, *texture_attributes))
+            # V3.2 — Télécharger SEA en cache même si JPG source présent
+            # Nécessaire pour que combine_textures() puisse pré-remplir le fond marin
+            is_sea_tile = (sea_texture_set is not None and
+                           texture_attributes in sea_texture_set)
+            if is_sea_tile:
+                try:
+                    import O4_Sea_Texture as _SEA
+                    _SEA.download_sea_jpeg(tile, *texture_attributes)
+                except Exception as _se:
+                    UI.vprint(2, f"   [SeaTex] cache SEA : {_se}")
         else:
-            # JPG absent — EOX uniquement si triangle mer dans bande 2km
+            # JPG absent — EOX utilisé comme source principale
             is_sea_tile = (sea_texture_set is not None and
                            texture_attributes in sea_texture_set)
             if is_sea_tile:
@@ -249,6 +259,22 @@ def build_tile(tile):
     except Exception as _ste:
         UI.vprint(2, f"   [SeaTex] sea_texture_set non construit : {_ste}")
         sea_texture_set = None
+
+    # V3.2 — Pré-générer JPG-Patch AVANT les threads
+    if sea_texture_set:
+        try:
+            import O4_Sea_Texture as _SEA
+            UI.vprint(1, f"   [SeaTex] Génération JPG-Patch pour {len(sea_texture_set)} tuile(s)...")
+            for _ta in sea_texture_set:
+                (tx, ty, zl, prov) = _ta
+                _ly = IMG.local_combined_providers_dict.get(prov, [])
+                if not _ly and prov in IMG.providers_dict:
+                    _ly = [{"layer_code": prov}]
+                _li = [(_rl["layer_code"], IMG.providers_dict[_rl["layer_code"]]) for _rl in _ly if _rl.get("layer_code","") in IMG.providers_dict]
+                _SEA.generate_sea_jpg(tile, tx, ty, zl, prov, _li)
+        except Exception as _pre:
+            import traceback
+            UI.vprint(0, f"   [SeaTex] Pré-génération ERREUR : {_pre}\n{traceback.format_exc()}")
 
     download_queue = queue.Queue()
     convert_queue = queue.Queue()

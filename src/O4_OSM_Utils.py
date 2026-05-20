@@ -15,7 +15,7 @@ overpass_servers = {
     "KU": "https://overpass.kumi.systems/api/interpreter",
     "RU": "http://overpass.osm.rambler.ru/cgi/interpreter",
 }
-overpass_server_choice = "DE"
+overpass_server_choice = "KU"  # V3.2 — KU (Kumi Systems) plus fiable que DE en 2026
 max_osm_tentatives = 8
 
 ################################################################################
@@ -512,8 +512,16 @@ def OSM_query_to_OSM_layer(
 ################################################################################
 def get_overpass_data(query, bbox, server_code=None):
     tentative = 1
+    # V3.2 — Session créée une seule fois (évite le spam TCP sur le serveur Overpass)
+    # et User-Agent identifié conformément à la politique OSM.
+    s = requests.Session()
+    s.headers.update({
+        "User-Agent": (
+            "Ortho4XP/3.2 (https://github.com/oscar-broman/Ortho4XP; "
+            "contact: ortho4xp@github.com)"
+        )
+    })
     while True:
-        s = requests.Session()
         true_server_code = server_code
         if not server_code:
             true_server_code = (
@@ -579,7 +587,7 @@ def get_overpass_data(query, bbox, server_code=None):
             return 0
         if UI.red_flag:
             return 0
-        time.sleep(min(2 ** tentative, 30))
+        time.sleep(min(2 ** tentative, 30) + random.uniform(0, 2))  # V3.2 — jitter anti-thundering-herd
         tentative += 1
     return r.content
 

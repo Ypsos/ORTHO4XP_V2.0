@@ -46,7 +46,7 @@ _SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
 BACKUP_ROOT  = os.path.join(_SCRIPT_DIR, "_backups_O4")
 
 # Nombre max de sauvegardes conservées PAR fichier (les plus anciennes sont purgées)
-MAX_BACKUPS_PER_FILE = 10
+MAX_BACKUPS_PER_FILE = 2
 
 # Extensions qui déclenchent TOUJOURS une sauvegarde automatique
 PROTECTED_EXTENSIONS = {".py", ".comb", ".ccorr", ".dds", ".cfg", ".json"}

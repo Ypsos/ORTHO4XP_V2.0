@@ -34,7 +34,7 @@ import os
 import math
 import urllib.request
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy
 
 import O4_UI_Utils as UI
@@ -59,6 +59,53 @@ WHITE_SUM_THRESHOLD = 735
 
 # Ratio minimum pixels blancs pour déclencher EOX (évite téléchargement pour 2-3 pixels)
 WHITE_RATIO_MIN = 0.01
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MASQUE MER DEPUIS MESH (dico_sea projeté sur ZL texture)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _sea_mask_from_dico(til_x_left, til_y_top, zoomlevel, dico_sea):
+    """
+    Projette les triangles mer du mesh (dico_sea) sur une image 4096x4096.
+    Retourne numpy bool array : True = pixel mer, False = pixel données.
+    Utilise la géographie réelle du mesh — indépendant de la couleur des pixels.
+    """
+    try:
+        import O4_Geo_Utils as GEO
+        size = 4096
+        mask_img = Image.new("L", (size, size), 0)
+        draw = ImageDraw.Draw(mask_img)
+
+        key = (til_x_left, til_y_top)
+        if key not in dico_sea or not dico_sea[key]:
+            # Pas de triangles mer → toute la tuile est terre
+            return numpy.zeros((size, size), dtype=bool)
+
+        # Origine pixel de la tuile en coordonnées absolues ZL
+        (lat0, lon0) = GEO.gtile_to_wgs84(til_x_left, til_y_top, int(zoomlevel))
+        (px0, py0)   = GEO.wgs84_to_pix(lat0, lon0, int(zoomlevel))
+
+        for (lat1, lon1, lat2, lon2, lat3, lon3) in dico_sea[key]:
+            (px1, py1) = GEO.wgs84_to_pix(lat1, lon1, int(zoomlevel))
+            (px2, py2) = GEO.wgs84_to_pix(lat2, lon2, int(zoomlevel))
+            (px3, py3) = GEO.wgs84_to_pix(lat3, lon3, int(zoomlevel))
+            # Coordonnées relatives à la tuile
+            pts = [
+                (px1 - px0, py1 - py0),
+                (px2 - px0, py2 - py0),
+                (px3 - px0, py3 - py0),
+            ]
+            draw.polygon(pts, fill=255)
+
+        del draw
+        return numpy.array(mask_img, dtype=numpy.uint8) > 128
+
+    except Exception as e:
+        UI.vprint(2, f"   [SeaTex] _sea_mask_from_dico erreur : {e}")
+        # Fallback : aucun pixel mer détecté → pipeline continue sans modification
+        return numpy.zeros((4096, 4096), dtype=bool)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -207,69 +254,86 @@ def download_sea_jpeg(tile, til_x_left, til_y_top, zoomlevel,
 # ASSEMBLAGE — FUSION JPG SOURCE + EOX
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _build_sea_fade_alpha(is_blanc, fade_px=128):
+def _build_sea_fade_alpha(is_blanc, zoomlevel=17, lat=46.0):
     """
-    Construit un canal alpha (0-255) avec fondu progressif sur les bords
-    extérieurs mer (là où le JPG touche le vide).
+    Construit un canal alpha (0-255) :
+      - Zone données (is_blanc=False)        → alpha=255 (opaque)
+      - Bande EOX 1km depuis le bord données → alpha=255 (EOX opaque)
+      - Dégradé 1km au-delà de la bande      → alpha 255→0 linéaire
+      - Au-delà du dégradé (large)           → alpha=0 (eau XP12 native)
 
-    Principe :
-      - Pixels avec données (is_blanc=False) → alpha=255 (opaque)
-      - Pixels blancs mer (is_blanc=True)    → alpha=0   (transparent)
-      - Bord de transition                   → fondu exponentiel 255→0
-        sur fade_px pixels depuis la frontière données/vide
-
-    XP12 voit la transparence et affiche sa propre eau en dessous →
-    jointure invisible quelle que soit la couleur XP12 (générique mondial).
+    XP12 voit la transparence progressive → jointure invisible.
     """
-    from PIL import ImageFilter
-    # Masque binaire : 255 = données, 0 = vide mer
-    has_data = (~is_blanc).astype(numpy.uint8) * 255
-    mask_img = Image.fromarray(has_data, "L")
-    # Fondu gaussien sur fade_px pixels depuis le bord données/vide
-    # GaussianBlur(r) ≈ transition sur ~3×r pixels
-    blur_r = max(4, fade_px // 3)
-    faded  = mask_img.filter(ImageFilter.GaussianBlur(blur_r))
-    alpha  = numpy.array(faded, dtype=numpy.uint8)
-    # Protection : intérieur données reste 255 (opaque total)
-    alpha[~is_blanc] = 255
-    return alpha
+    import math
+    from scipy import ndimage as _ndi
+
+    # Taille bande et dégradé en pixels selon ZL et latitude
+    tile_m   = 40075000 / (2 ** int(zoomlevel)) * math.cos(math.radians(lat))
+    px_per_m = is_blanc.shape[1] / (tile_m * 16)
+    bande_px = int(1000 * px_per_m)   # 1km = bande EOX opaque
+    fade_px  = int(1000 * px_per_m)   # 1km = dégradé vers transparent
+
+    # Distance depuis le bord données/mer (en pixels)
+    dist = _ndi.distance_transform_edt(is_blanc).astype(numpy.float32)
+
+    # Alpha selon distance
+    alpha = numpy.zeros(is_blanc.shape, dtype=numpy.float32)
+    alpha[dist <= bande_px] = 255.0
+    in_fade = (dist > bande_px) & (dist <= bande_px + fade_px)
+    alpha[in_fade] = 255.0 * (1.0 - (dist[in_fade] - bande_px) / fade_px)
+
+    # Zones données : toujours opaque
+    alpha[~is_blanc] = 255.0
+
+    return numpy.clip(alpha, 0, 255).astype(numpy.uint8)
 
 
-def fill_sea_blanks(jpg_path, sea_jpg_path, fade_px=128):
+def fill_sea_blanks(jpg_path, sea_jpg_path, zoomlevel=17, lat=46.0,
+                    til_x_left=None, til_y_top=None, dico_sea=None):
     """
-    Fusionne JPG source avec JPG EOX : remplace pixels blancs par EOX.
-    Applique un fondu alpha progressif sur les bords extérieurs mer.
+    Fusionne JPG source avec JPG EOX en utilisant le masque mer du mesh.
+    Le masque mer est projeté depuis dico_sea (triangles réels) sur la tuile.
 
     Règles :
-      - Pixel blanc (somme >= 735) → EOX
-      - Pixel avec données         → conservé
-      - Bord données/vide          → fondu alpha 255→0 sur fade_px pixels
-        → XP12 affiche sa propre eau en transparence → jointure invisible
+      - Pixel mer (triangle mesh)  → EOX RGB
+      - Pixel avec données         → IGN conservé
+      - Bande 1km depuis données   → EOX opaque (alpha=255)
+      - Dégradé 1km au-delà        → alpha 255→0
+      - Au large                   → alpha=0 (eau XP12 native)
 
-    Retourne Image PIL RGBA (canal alpha = fondu mer).
+    Retourne Image PIL RGBA.
     """
     try:
         src = numpy.array(Image.open(jpg_path).convert("RGB"),     dtype=numpy.uint16)
         eox = numpy.array(Image.open(sea_jpg_path).convert("RGB"), dtype=numpy.uint16)
 
-        som      = src[:,:,0] + src[:,:,1] + src[:,:,2]
-        is_blanc = (som >= WHITE_SUM_THRESHOLD)
+        # Masque mer depuis le mesh (géographie réelle)
+        if til_x_left is not None and til_y_top is not None and dico_sea is not None:
+            is_mer = _sea_mask_from_dico(til_x_left, til_y_top, zoomlevel, dico_sea)
+            if is_mer.shape != (src.shape[0], src.shape[1]):
+                is_mer = numpy.array(
+                    Image.fromarray(is_mer.astype(numpy.uint8)*255, "L").resize(
+                        (src.shape[1], src.shape[0]), Image.NEAREST),
+                    dtype=numpy.uint8) > 128
+        else:
+            # Fallback : détection par couleur si dico_sea absent
+            som    = src[:,:,0] + src[:,:,1] + src[:,:,2]
+            is_mer = (som >= WHITE_SUM_THRESHOLD)
 
-        # Fusion RGB : blancs → EOX, données → source
+        # Fusion RGB : mer → EOX, données → IGN
         result = src.copy()
         for ch in range(3):
-            result[:,:,ch] = numpy.where(is_blanc, eox[:,:,ch], src[:,:,ch])
+            result[:,:,ch] = numpy.where(is_mer, eox[:,:,ch], src[:,:,ch])
 
-        # Canal alpha : fondu progressif sur bords extérieurs mer
-        alpha = _build_sea_fade_alpha(is_blanc, fade_px=fade_px)
+        # Canal alpha : bande 1km opaque + dégradé 1km
+        alpha = _build_sea_fade_alpha(is_mer, zoomlevel=zoomlevel, lat=lat)
 
-        n = int(is_blanc.sum())
+        n = int(is_mer.sum())
         UI.vprint(2,
-            f"   [SeaTex] {n:,} pixels mer bouchés "
+            f"   [SeaTex] {n:,} pixels mer (mesh) "
             f"({100*n/(src.shape[0]*src.shape[1]):.1f}%) "
-            f"+ fondu alpha {fade_px}px")
+            f"+ bande+dégradé 1km")
 
-        # Retourner RGBA avec canal alpha fondu
         rgb_img   = Image.fromarray(result.astype(numpy.uint8), "RGB")
         alpha_img = Image.fromarray(alpha, "L")
         rgba      = rgb_img.convert("RGBA")
@@ -331,10 +395,156 @@ def process_sea_fill(tile, til_x_left, til_y_top, zoomlevel,
             return None
 
         if os.path.isfile(jpg_path):
-            return fill_sea_blanks(jpg_path, sea_path)
+            _lat = float(getattr(tile, "lat", 46.0))
+            return fill_sea_blanks(jpg_path, sea_path,
+                                   zoomlevel=int(zoomlevel), lat=_lat,
+                                   til_x_left=til_x_left, til_y_top=til_y_top,
+                                   dico_sea=dico_sea)
         else:
-            return Image.open(sea_path).convert("RGB")
+            # JPG absent = tuile 100% mer sans données IGN
+            # → EOX RGBA avec alpha=0 : XP12 affiche sa propre eau (pas de damier)
+            eox = Image.open(sea_path).convert("RGBA")
+            eox.putalpha(Image.new("L", eox.size, 0))
+            UI.vprint(2, "   [SeaTex] Tuile 100% mer → alpha=0 (eau XP12 native)")
+            return eox
 
     except Exception as e:
         UI.vprint(2, f"   [SeaTex] process_sea_fill erreur : {e}")
         return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JPG-PATCH — Génération locale fond marin (pas de téléchargement)
+# Appelé par O4_Tile_Utils.build_tile() AVANT les threads download/convert
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _tile_folder(tile):
+    """Retourne le nom de dossier standard Ortho4XP : ex. +46-003 ou +46+002"""
+    sign_lat = "+" if tile.lat >= 0 else "-"
+    sign_lon = "+" if tile.lon >= 0 else "-"
+    return f"{sign_lat}{abs(int(tile.lat)):02d}{sign_lon}{abs(int(tile.lon)):03d}"
+
+
+def generate_sea_jpg(tile, til_x_left, til_y_top, zoomlevel, provider_code,
+                     neighbor_colors=None):
+    """
+    Génère un JPG fond marin 4096×4096 dans :
+      Orthophotos/JPG-Patch/+46-003/PATCH_{zoomlevel}/
+
+    Couleur :
+      - Moyenne RGB des JPG voisins si fournie (neighbor_colors = liste de tuples RGB)
+      - Sinon : bleu maritime XP12 par défaut (42, 68, 95)
+    Dégradé côte→large + grain subtil pour éviter le damier uniforme.
+
+    Retourne le chemin JPG créé, ou None si erreur.
+    Appelé par build_tile() dans O4_Tile_Utils.py.
+    """
+    try:
+        patch_dir = os.path.join(
+            FNAMES.Imagery_dir,
+            "JPG-Patch",
+            _tile_folder(tile),
+            f"PATCH_{int(zoomlevel)}"
+        )
+        os.makedirs(patch_dir, exist_ok=True)
+
+        jpg_name = (
+            f"{int(til_y_top)}_{int(til_x_left)}"
+            f"_ZL{int(zoomlevel)}_PATCH.jpg"
+        )
+        jpg_path = os.path.join(patch_dir, jpg_name)
+
+        if os.path.isfile(jpg_path):
+            UI.vprint(1, f"   [SeaTex] JPG-Patch cache : {jpg_name}")
+            return jpg_path
+
+        # ── Couleur de base ───────────────────────────────────────────────────
+        if neighbor_colors and len(neighbor_colors) > 0:
+            r = int(numpy.mean([c[0] for c in neighbor_colors]))
+            g = int(numpy.mean([c[1] for c in neighbor_colors]))
+            b = int(numpy.mean([c[2] for c in neighbor_colors]))
+        else:
+            r, g, b = 42, 68, 95  # bleu maritime XP12 par défaut
+
+        # ── Image 4096×4096 avec dégradé côte→large ──────────────────────────
+        size = 4096
+        arr  = numpy.zeros((size, size, 3), dtype=numpy.uint8)
+        for row in range(size):
+            t  = row / (size - 1)
+            rr = max(0, int(r * (1.0 - 0.30 * t)))
+            gg = max(0, int(g * (1.0 - 0.25 * t)))
+            bb = max(0, int(b * (1.0 - 0.10 * t)))
+            arr[row, :, 0] = rr
+            arr[row, :, 1] = gg
+            arr[row, :, 2] = bb
+
+        # ── Grain subtil (±4 niveaux) — seed déterministe par tuile ──────────
+        rng   = numpy.random.default_rng(seed=int(til_x_left) ^ int(til_y_top))
+        noise = rng.integers(-4, 5, size=(size, size, 3), dtype=numpy.int16)
+        arr   = numpy.clip(arr.astype(numpy.int16) + noise, 0, 255).astype(numpy.uint8)
+
+        Image.fromarray(arr, "RGB").save(jpg_path, quality=85)
+        UI.vprint(1, f"   [SeaTex] JPG-Patch généré : {jpg_name}")
+        return jpg_path
+
+    except Exception as e:
+        UI.vprint(0, f"   [SeaTex] generate_sea_jpg ERREUR : {e}")
+        return None
+
+
+def _get_sea_tile_for_tile(tile, til_x_left, til_y_top, zoomlevel):
+    """
+    Retourne Image PIL depuis JPG-Patch si disponible.
+    Appelé par combine_textures() dans O4_Imagery_Utils.py
+    pour pré-remplir le fond marin avant assemblage multi-source.
+    """
+    patch_dir = os.path.join(
+        FNAMES.Imagery_dir,
+        "JPG-Patch",
+        _tile_folder(tile),
+        f"PATCH_{int(zoomlevel)}"
+    )
+    jpg_name = (
+        f"{int(til_y_top)}_{int(til_x_left)}"
+        f"_ZL{int(zoomlevel)}_PATCH.jpg"
+    )
+    jpg_path = os.path.join(patch_dir, jpg_name)
+    if os.path.isfile(jpg_path):
+        try:
+            return Image.open(jpg_path).convert("RGB")
+        except Exception:
+            return None
+    return None
+
+
+def _get_sea_tile(til_x_left, til_y_top, zoomlevel):
+    """
+    Version sans tile — parcourt les dossiers JPG-Patch existants.
+    Compatibilité avec les appels existants dans O4_Imagery_Utils.py.
+    """
+    base_dir = os.path.join(FNAMES.Imagery_dir, "JPG-Patch")
+    if not os.path.isdir(base_dir):
+        return None
+    jpg_name = (
+        f"{int(til_y_top)}_{int(til_x_left)}"
+        f"_ZL{int(zoomlevel)}_PATCH.jpg"
+    )
+    for tile_folder in os.listdir(base_dir):
+        patch_dir = os.path.join(base_dir, tile_folder, f"PATCH_{int(zoomlevel)}")
+        jpg_path  = os.path.join(patch_dir, jpg_name)
+        if os.path.isfile(jpg_path):
+            try:
+                return Image.open(jpg_path).convert("RGB")
+            except Exception:
+                return None
+    return None
+
+
+def download_sea_neighbor_row(tile, til_x_left, til_y_top, zoomlevel,
+                               provider_code):
+    """
+    Stub compatible avec l'appel existant dans combine_textures().
+    Les tuiles voisines sont gérées par generate_sea_jpg au moment
+    du build — pas de téléchargement réseau nécessaire.
+    """
+    pass
