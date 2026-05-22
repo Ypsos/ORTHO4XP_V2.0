@@ -888,8 +888,8 @@ def initialize_local_combined_providers_dict(tile):
                                   "PATCH_" + str(_zl))
         if os.path.isdir(_patch_dir):
             _img_dir = os.path.join("JPG-Patch", _tile_key)
-            providers_dict["JPG-Patch"] = {
-                "code"        : "JPG-Patch",
+            providers_dict["PATCH"] = {
+                "code"        : "PATCH",
                 "request_type": "local_tms",
                 "image_type"  : "jpeg",
                 "imagery_dir" : _img_dir,
@@ -898,10 +898,10 @@ def initialize_local_combined_providers_dict(tile):
                 "in_GUI"      : False,
                 "url_template": "",
             }
-            _patch_layer = {"layer_code":"JPG-Patch","extent_code":"global",
+            _patch_layer = {"layer_code":"PATCH","extent_code":"global",
                             "color_code":"none","priority":"low"}
             for _pc in list(local_combined_providers_dict.keys()):
-                if not any(l["layer_code"]=="JPG-Patch" for l in local_combined_providers_dict[_pc]):
+                if not any(l["layer_code"]=="PATCH" for l in local_combined_providers_dict[_pc]):
                     local_combined_providers_dict[_pc] = [_patch_layer] + local_combined_providers_dict[_pc]
             UI.vprint(1, "   [SeaTex] Provider PATCH injecté.")
     except Exception as _pe:
@@ -1646,6 +1646,9 @@ def build_jpeg_ortho(
                 if not os.path.isfile(
                     os.path.join(true_file_dir, true_file_name)
                 ):
+                    if rlayer["layer_code"] == "PATCH":
+                        data_found = True
+                        continue
                     UI.vprint(
                         1,
                         "   Downloading missing orthophoto "
@@ -2059,31 +2062,9 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
     (y0, x0) = GEO.gtile_to_wgs84(til_x_left, til_y_top, zoomlevel)
     (y1, x1) = GEO.gtile_to_wgs84(til_x_left + 16, til_y_top + 16, zoomlevel)
     mask_weight_below = numpy.zeros((4096, 4096), dtype=numpy.uint16)
-    # ── SEA EOX : pré-remplissage fond maritime avant assemblage multi-source ─
-    # Les JPG OrthoLitto (priorité high) écraseront par-dessus
-    # SEA visible uniquement là où aucun provider n'a de données
-    try:
-        import O4_Sea_Texture as _SEA
-        _sea_im = _SEA._get_sea_tile(til_x_left, til_y_top, zoomlevel)
-        if _sea_im is not None:
-            _sea_im = _sea_im.resize((4096, 4096), Image.LANCZOS).convert("RGB")
-            # ── Normalisation colorimétrique SEA → même profil sRGB que l'ortho ──
-            _sea_im = CNORM.normalize_if_enabled(_sea_im)
-            big_image.paste(_sea_im, (0, 0))
-            # Rangée voisine vers le large (+1 tuile dans chaque direction)
-            _step = 16
-            for _vx, _vy in [
-                (til_x_left - _step, til_y_top),
-                (til_x_left + _step, til_y_top),
-                (til_x_left, til_y_top - _step),
-                (til_x_left, til_y_top + _step),
-            ]:
-                _SEA.download_sea_neighbor_row(
-                    tile, _vx, _vy, zoomlevel,
-                    provider_code
-                )
-    except Exception as _sea_e:
-        UI.vprint(2, f"   [SeaTex] pré-remplissage : {_sea_e}")
+    # ─────────────────────────────────────────────────────────────────────────
+    # JPG-Patch intégré via layer PATCH dans local_combined_providers_dict
+    # Pas d'appel O4_Sea_Texture ici — thread workers uniquement
     # ─────────────────────────────────────────────────────────────────────────
     if len(local_combined_providers_dict[provider_code]) == 1:
         rlayer = local_combined_providers_dict[provider_code][0]
@@ -2116,7 +2097,11 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
         true_file_dir = FNAMES.jpeg_file_dir_from_attributes(
             tile.lat, tile.lon, true_zl, providers_dict[rlayer["layer_code"]]
         )
-        true_im = Image.open(os.path.join(true_file_dir, true_file_name))
+        _true_path1 = os.path.join(true_file_dir, true_file_name)
+        if not os.path.isfile(_true_path1):
+            UI.vprint(2, f"   [SeaTex] JPG absent — fond mer utilisé : {true_file_name}")
+            return big_image
+        true_im = Image.open(_true_path1)
         UI.vprint(2, "Imprinting for provider", rlayer, til_x_left, til_y_top)
         true_im = color_transform(true_im, rlayer["color_code"])
         # ── COLOR NORMALIZE source unique ─────────────────────────────
@@ -2194,20 +2179,12 @@ def combine_textures(tile, til_x_left, til_y_top, zoomlevel, provider_code):
         true_file_dir = FNAMES.jpeg_file_dir_from_attributes(
             tile.lat, tile.lon, true_zl, providers_dict[rlayer["layer_code"]]
         )
-        true_im = Image.open(os.path.join(true_file_dir, true_file_name))
+        _true_path2 = os.path.join(true_file_dir, true_file_name)
+        if not os.path.isfile(_true_path2):
+            UI.vprint(2, f"   [SeaTex] JPG absent — fond mer utilisé : {true_file_name}")
+            continue
+        true_im = Image.open(_true_path2)
         UI.vprint(2, "Imprinting for provider", rlayer, til_x_left, til_y_top)
-        # ── SEA FILL : boucher blancs mer via EOX avant Color Normalize ──
-        try:
-            import O4_Sea_Texture as _SEA
-            _jpg_path = os.path.join(true_file_dir, true_file_name)
-            _dico_sea = _get_dico_sea(tile)
-            _filled = _SEA.process_sea_fill(
-                tile, true_til_x_left, true_til_y_top, true_zl,
-                rlayer["layer_code"], _jpg_path, _dico_sea)
-            if _filled is not None:
-                true_im = _filled
-        except Exception as _se:
-            UI.vprint(2, f"   [SeaTex] pipeline : {_se}")
         # ─────────────────────────────────────────────────────────────
         true_im = color_transform(true_im, rlayer["color_code"])
         # ── COLOR NORMALIZE par source avant assemblage ───────────────

@@ -163,31 +163,16 @@ def download_textures(tile, download_queue, convert_queue, sea_texture_set=None)
                 2, int(100 * done / (done + download_queue.qsize()))
             )
             convert_queue.put((tile, *texture_attributes))
-            # V3.2 — Télécharger SEA en cache même si JPG source présent
-            # Nécessaire pour que combine_textures() puisse pré-remplir le fond marin
-            is_sea_tile = (sea_texture_set is not None and
-                           texture_attributes in sea_texture_set)
-            if is_sea_tile:
-                try:
-                    import O4_Sea_Texture as _SEA
-                    _SEA.download_sea_jpeg(tile, *texture_attributes)
-                except Exception as _se:
-                    UI.vprint(2, f"   [SeaTex] cache SEA : {_se}")
         else:
-            # JPG absent — EOX utilisé comme source principale
+            # JPG absent — si tuile mer, JPG-Patch déjà généré → convert quand même
             is_sea_tile = (sea_texture_set is not None and
                            texture_attributes in sea_texture_set)
             if is_sea_tile:
-                try:
-                    import O4_Sea_Texture as _SEA
-                    if _SEA.download_sea_jpeg(tile, *texture_attributes):
-                        done += 1
-                        UI.progress_bar(
-                            2, int(100 * done / (done + download_queue.qsize()))
-                        )
-                        convert_queue.put((tile, *texture_attributes))
-                except Exception as _se:
-                    UI.vprint(2, f"   [SeaTex] fallback : {_se}")
+                done += 1
+                UI.progress_bar(
+                    2, int(100 * done / (done + download_queue.qsize()))
+                )
+                convert_queue.put((tile, *texture_attributes))
 
         if UI.red_flag:
             UI.vprint(1, "Download process interrupted.")
@@ -230,7 +215,7 @@ def build_tile(tile):
         _sign_lon = "+" if tile.lon >= 0 else "-"
         _tile_key = f"{_sign_lat}{abs(int(tile.lat)):02d}{_sign_lon}{abs(int(tile.lon)):03d}"
         _zl = getattr(tile, "default_zl", 17)
-        _patch_dir = os.path.join(_FN.Imagery_dir, "JPG-Patch", _tile_key, f"JPG-Patch_{_zl}")
+        _patch_dir = os.path.join(_FN.Imagery_dir, "JPG-Patch", _tile_key, f"PATCH_{_zl}")
         os.makedirs(_patch_dir, exist_ok=True)
         UI.vprint(1, f"   [SeaTex] Dossier JPG-Patch créé : {_patch_dir}")
     except Exception as _e:
@@ -296,20 +281,8 @@ def build_tile(tile):
                 (tx, ty, zl, prov) = _ta
                 _jpg = _SEA.generate_sea_jpg(tile, tx, ty, zl, prov,
                                              dico_customzl=dico_customzl)
-                # V3.2 — Copier dans le dossier provider pour build_jpeg_ortho
-                if _jpg and os.path.isfile(_jpg):
-                    try:
-                        _pdir = FNAMES.jpeg_file_dir_from_attributes(
-                            tile.lat, tile.lon, zl, IMG.providers_dict[prov])
-                        os.makedirs(_pdir, exist_ok=True)
-                        _pname = FNAMES.jpeg_file_name_from_attributes(
-                            tx, ty, zl, "PATCH")
-                        _pdest = os.path.join(_pdir, _pname)
-                        if not os.path.isfile(_pdest):
-                            import shutil as _sh
-                            _sh.copy2(_jpg, _pdest)
-                    except Exception as _ce:
-                        UI.vprint(2, f"   [SeaTex] Copie PATCH→provider : {_ce}")
+                if _jpg:
+                    UI.vprint(2, f"   [SeaTex] JPG-Patch généré : {os.path.basename(_jpg)}")
         except Exception as _pre:
             import traceback
             UI.vprint(0, f"   [SeaTex] Pré-génération ERREUR : {_pre}\n{traceback.format_exc()}")
